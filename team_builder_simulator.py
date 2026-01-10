@@ -213,7 +213,7 @@ class Simulator:
                 self.adjacent[player] = [r for r in (new - 1, new, new + 1) if self.regions - 1 >= r >= 0]
 
 
-            while tick < late_end:
+            while tick < late_end and len(self.teams) > 1:
 
                 # order: move -> events -> move -> events ->...
                 self.change_player_positions(2)
@@ -274,7 +274,7 @@ class Simulator:
         """
         print("pve time")
 
-        place = len(self.kill_board)
+        place = len(self.kill_board) - 1
         # will an event happen?
         chance = self.pve_chances[place]
         occurrence = np.random.rand() <= chance

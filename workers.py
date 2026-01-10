@@ -62,6 +62,7 @@ class SimulatorWorker(QObject):
         except Exception as e:
             import traceback
             self.error.emit(traceback.format_exc())
+            print(str(e))
 
         finally:
             self.finished.emit()
