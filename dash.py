@@ -52,6 +52,8 @@ class Dashboard(QMainWindow):
         # SEARCH VARS
         # connect to db
         self.api = DBOPs("stats.db")
+        self.api.conn.execute("PRAGMA journal_mode=WAL;")
+        self.api.conn.execute("PRAGMA synchronous=NORMAL;")
 
         # query and preload player search info
         self.players = self.api.get_players()
@@ -69,15 +71,13 @@ class Dashboard(QMainWindow):
 
         # tool
         self.redacted_players = self.api.get_redacted()
-        # customization json
+        # customization json goes here later
         
-
-
 
 
         # ----- DASH SETUP -----
         self.setWindowTitle("r/ultrahardcore Recorded Round Dashboard")
-        self.setFixedSize(1400, 800)
+        self.setFixedSize(1500, 800)
 
         #self.setBaseSize(QSize(1200,675))
         self.title_font = QFont("Helvetica", 24, QFont.Bold)
@@ -112,7 +112,7 @@ class Dashboard(QMainWindow):
         title_label.setFont(title_font)
 
         # version
-        version = QLabel("Version: Beta 2026.01.04")
+        version = QLabel("Version: Beta 2026.01.10")
         version_font = QFont("Helvetica", 8)
         version.setFont(version_font)
 
@@ -2189,10 +2189,14 @@ class Dashboard(QMainWindow):
         sig_stats_title = QLabel("<h2>Notable Stats</h2>")
         self.sig_stats = QLabel()
         self.sig_stats.setWordWrap(True)
+        newcomers_container = QWidget()
+        newcomers_layout = QVBoxLayout(newcomers_container)
+        newcomers_layout.setAlignment(Qt.AlignmentFlag.AlignTop)
         newcomers_title = QLabel("<h2>Newcomers</h2>")
         self.newcomers = QLabel()
+        newcomers_layout.addWidget(self.newcomers)
         newcomers_scroll = QScrollArea()
-        newcomers_scroll.setWidget(self.newcomers)
+        newcomers_scroll.setWidget(newcomers_container)
         newcomers_scroll.setFixedHeight(220)
         newcomers_scroll.setWidgetResizable(True)
 
@@ -2896,6 +2900,7 @@ class Dashboard(QMainWindow):
         return page_scroll
 
     def update(self):
+        self.update_status.blockSignals(False)
         self.update_button.setEnabled(False)
 
         self.thread = QThread()
@@ -2913,18 +2918,21 @@ class Dashboard(QMainWindow):
         self.update_status.setText("Now Updating... Please don't close the app until the update is complete!")
 
         self.thread.start()
+        self.api.cur.commit()
         self.api = DBOPs("stats.db")
+        self.fetch = FullAggregation(interface=self.api)
 
         self.players = self.api.get_players()
         self.rounds = self.api.get_rounds()
 
     def update_done(self):
-        self.update_status.setText("Update Complete! (Please restart to see new players and rounds.)"
+        self.update_status.setText("Update Complete! (Please restart the app to complete the update!)"
                                    "  If something feels off, please report the issue to plumjuice!")
         self.update_button.setEnabled(True)
 
     def update_error(self, msg):
         self.update_status.setText(f"Error: {msg}")
+        self.update_status.blockSignals(True)
         self.update_button.setEnabled(True)
 
     def get_unadded_rounds(self):

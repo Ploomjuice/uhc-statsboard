@@ -290,12 +290,12 @@ class FullAggregation:
         # start_month_q = math.ceil(month/3) * 3 - 2
         # end_month_q = start_month_q + 3 if start_month_q != 10 else 1
         # start_month_h = math.ceil(month/6)
-        #
 
-        start_q, end_q = FullAggregation.make_intervals(3)[-2:]
-        start_h, end_h = FullAggregation.make_intervals(6)[-2:]
-        start_y, end_y = FullAggregation.make_intervals(12)[-2:]
-        print(start_q, end_q, start_h, end_h, start_y, end_y)
+
+        # start_q, end_q = FullAggregation.make_intervals(3)[-2:]
+        # start_h, end_h = FullAggregation.make_intervals(6)[-2:]
+        # start_y, end_y = FullAggregation.make_intervals(12)[-2:]
+        # print(start_q, end_q, start_h, end_h, start_y, end_y)
 
         self.init_new_players()
 
@@ -311,6 +311,7 @@ class FullAggregation:
         self.ironmans = self.get_ironmans()
         self.fdams = self.get_fdams()
         self.top_frags = self.get_top_frags()
+        self.pve = self.get_total_pve_d()
 
         # calculate from basic stats
         self.krs = self.get_kill_records()
@@ -320,40 +321,134 @@ class FullAggregation:
         self.kdr = self.kill_counter / self.death_counter
         self.wpr = self.win_counter / self.round_counter
 
-        # cheap time-partitioned stats (i'm just lazy)
-        new_latest_kpy = self.get_stat_one_interval(interval_kills_q, start_y, end_y)
-        new_latest_dpy = self.get_stat_one_interval(interval_deaths_q, start_y, end_y)
-        new_latest_rpy = self.get_stat_one_interval(interval_rounds_q, start_y, end_y)
+        # cheap time-partitioned stats (***add multi-interval updates)
 
-        new_latest_kpq = self.get_stat_one_interval(interval_kills_q, start_q, end_q)
-        new_latest_dpq = self.get_stat_one_interval(interval_deaths_q, start_q, end_q)
-        new_latest_rpq = self.get_stat_one_interval(interval_rounds_q, start_q, end_q)
+        # update interval of last updated -> current
 
-        new_latest_kph = self.get_stat_one_interval(interval_kills_q, start_h, end_h)
-        new_latest_dph = self.get_stat_one_interval(interval_deaths_q, start_h, end_h)
-        new_latest_rph = self.get_stat_one_interval(interval_rounds_q, start_h, end_h)
+        raw_last_updated = self.api.cur.execute("""
+                                SELECT MAX(date)
+                                FROM season_info
+                            """).fetchall()[0][0]
+        last_updated = datetime.strptime(raw_last_updated, "%Y-%m-%d")
+        lu_year = last_updated.year
+        lu_month = last_updated.month
+        idx_3m = (lu_year - 2012) * 4 + math.floor(lu_month / 3) - 1
+        print(idx_3m)
+        idx_6m = (lu_year - 2012) * 2 + math.floor(lu_month / 6) - 1
+        print(idx_6m)
+        idx_12m = lu_year - 2012 - 1
+        intervals_3m = FullAggregation.make_intervals(3)
+        print(intervals_3m)
+        end_3m = len(intervals_3m) - 1
+        print(end_3m)
+        intervals_6m = FullAggregation.make_intervals(6)
+        end_6m = len(intervals_6m) - 1
+        print(end_6m)
+        intervals_12m = FullAggregation.make_intervals(12)
+        print(intervals_12m)
+        end_12m = len(intervals_12m) - 1
 
-        new_latest_pvepy = self.get_stat_one_interval(interval_pve_q, start_y, end_y)
-        new_latest_pvepq = self.get_stat_one_interval(interval_pve_q, start_q, end_q)
-        new_latest_pveph = self.get_stat_one_interval(interval_pve_q, start_h, end_h)
+        # quarters
+        while idx_3m < end_3m:
+            print("getting quarters")
+            print(idx_3m, end_3m)
+            start = intervals_3m[idx_3m]
+            end = intervals_3m[idx_3m+1]
 
-        self.kpy.iloc[-1] = new_latest_kpy
-        self.kpq.iloc[-1] = new_latest_kpq
-        self.kph.iloc[-1] = new_latest_kph
+            new_latest_kpq = self.get_stat_one_interval(interval_kills_q, start, end)
+            new_latest_dpq = self.get_stat_one_interval(interval_deaths_q, start, end)
+            new_latest_rpq = self.get_stat_one_interval(interval_rounds_q, start, end)
+            new_latest_pvepq = self.get_stat_one_interval(interval_pve_q, start, end)
 
-        self.dpy.iloc[-1] = new_latest_dpy
-        self.dpq.iloc[-1] = new_latest_dpq
-        self.dph.iloc[-1] = new_latest_dph
+            self.kpq.iloc[idx_3m] = new_latest_kpq
+            self.dpq.iloc[idx_3m] = new_latest_dpq
+            self.rpq.iloc[idx_3m] = new_latest_rpq
+            self.pvepq.iloc[idx_3m] = new_latest_pvepq
+            idx_3m += 1
 
-        self.rpy.iloc[-1] = new_latest_rpy
-        self.rpq.iloc[-1] = new_latest_rpq
-        self.rph.iloc[-1] = new_latest_rph
+        # halves
+        while idx_6m < end_6m:
+            print("getting halves")
+            print(idx_6m, end_6m)
+            start = intervals_6m[idx_6m]
+            end = intervals_6m[idx_6m+1]
 
-        self.pve = self.get_total_pve_d()
-        self.pvepy.iloc[-1] = new_latest_pvepy
-        self.pvepq.iloc[-1] = new_latest_pvepq
-        self.pveph.iloc[-1] = new_latest_pveph
+            new_latest_kph = self.get_stat_one_interval(interval_kills_q, start, end)
+            new_latest_dph = self.get_stat_one_interval(interval_deaths_q, start, end)
+            new_latest_rph = self.get_stat_one_interval(interval_rounds_q, start, end)
 
+            new_latest_pveph = self.get_stat_one_interval(interval_pve_q, start, end)
+
+            self.kph.iloc[idx_6m] = new_latest_kph
+            self.dph.iloc[idx_6m] = new_latest_dph
+            self.rph.iloc[idx_6m] = new_latest_rph
+            self.pveph.iloc[idx_6m] = new_latest_pveph
+            idx_6m += 1
+
+        # years
+        while idx_12m < end_12m:
+            print("getting years")
+            print(idx_12m, end_12m)
+            start = intervals_12m[idx_12m]
+            end = intervals_12m[idx_12m+1]
+
+            new_latest_kpy = self.get_stat_one_interval(interval_kills_q, start, end)
+            new_latest_dpy = self.get_stat_one_interval(interval_deaths_q, start, end)
+            new_latest_rpy = self.get_stat_one_interval(interval_rounds_q, start, end)
+            new_latest_pvepy = self.get_stat_one_interval(interval_pve_q, start, end)
+
+            self.kpy.iloc[idx_12m] = new_latest_kpy
+            self.dpy.iloc[idx_12m] = new_latest_dpy
+            self.rpy.iloc[idx_12m] = new_latest_rpy
+            self.pvepy.iloc[idx_12m] = new_latest_pvepy
+
+            new_latest_ratings = self.player_ratings_one_year(self.kprpy.iloc[idx_12m].to_dict(),
+                                                              self.wprpy.iloc[idx_12m].to_dict(),
+                                                              self.rpy.iloc[idx_12m].to_dict(), start, end)
+
+            for pid in self.player_map.values():
+                self.yearly_ratings[pid][str(start)[:4]] = new_latest_ratings[
+                    pid] if pid in new_latest_ratings else np.nan
+
+            idx_12m += 1
+
+        self.awpy, self.dwpy, self.wpy = self.get_yearly_wins()
+
+
+        # update latest _only_
+        # new_latest_kpy = self.get_stat_one_interval(interval_kills_q, start_y, end_y)
+        # new_latest_dpy = self.get_stat_one_interval(interval_deaths_q, start_y, end_y)
+        # new_latest_rpy = self.get_stat_one_interval(interval_rounds_q, start_y, end_y)
+        #
+        # new_latest_kpq = self.get_stat_one_interval(interval_kills_q, start_q, end_q)
+        # new_latest_dpq = self.get_stat_one_interval(interval_deaths_q, start_q, end_q)
+        # new_latest_rpq = self.get_stat_one_interval(interval_rounds_q, start_q, end_q)
+        #
+        # new_latest_kph = self.get_stat_one_interval(interval_kills_q, start_h, end_h)
+        # new_latest_dph = self.get_stat_one_interval(interval_deaths_q, start_h, end_h)
+        # new_latest_rph = self.get_stat_one_interval(interval_rounds_q, start_h, end_h)
+        #
+        # new_latest_pvepy = self.get_stat_one_interval(interval_pve_q, start_y, end_y)
+        # new_latest_pvepq = self.get_stat_one_interval(interval_pve_q, start_q, end_q)
+        # new_latest_pveph = self.get_stat_one_interval(interval_pve_q, start_h, end_h)
+        #
+        # self.kpy.iloc[-1] = new_latest_kpy
+        # self.kpq.iloc[-1] = new_latest_kpq
+        # self.kph.iloc[-1] = new_latest_kph
+        #
+        # self.dpy.iloc[-1] = new_latest_dpy
+        # self.dpq.iloc[-1] = new_latest_dpq
+        # self.dph.iloc[-1] = new_latest_dph
+        #
+        # self.rpy.iloc[-1] = new_latest_rpy
+        # self.rpq.iloc[-1] = new_latest_rpq
+        # self.rph.iloc[-1] = new_latest_rph
+        #
+        #
+        # self.pvepy.iloc[-1] = new_latest_pvepy
+        # self.pvepq.iloc[-1] = new_latest_pvepq
+        # self.pveph.iloc[-1] = new_latest_pveph
+        #
         self.kprpy = self.kpy / self.rpy
         self.kprpq = self.kpq / self.rpq
         self.kprph = self.kph / self.rph
@@ -362,11 +457,7 @@ class FullAggregation:
         self.kdrph = self.kph / self.dph
         self.wprpy = self.wpy / self.rpy
 
-        new_latest_ratings = self.player_ratings_one_year(self.kprpy.iloc[-1].to_dict(), self.wprpy.iloc[-1].to_dict(),
-                                                          self.rpy.iloc[-1].to_dict(), start_y, end_y)
 
-        for pid in self.player_map.values():
-            self.yearly_ratings[pid][str(start_y)[:4]] = new_latest_ratings[pid] if pid in new_latest_ratings else np.nan
 
         self.all_agg_stats = {
             'kills': self.kill_counter,
@@ -535,7 +626,7 @@ class FullAggregation:
                 PARTITION BY dupe_id
             ) as rn
             FROM season_killfeed
-            WHERE killer_id IS NOT NULL
+            WHERE killer_id IS NOT NULL 
             
         ),
         
@@ -1612,15 +1703,15 @@ class FullAggregation:
         wprpy = self.wprpy.round(3)
 
 
-        top_frag_rate = {i:round(100*v/rounds[i], 1) for i, v in top_frags.items()}
+        top_frag_rate = {i:round(100*v/rounds[i], 1) if rounds[i] != 0 else 'N/A' for i, v in top_frags.items()}
         pve_rate = {i:round(100*v/deaths[i], 1) if deaths[i] != 0 else float('nan') for i, v in pve.items()} # % of deaths being pve
         suicide_rate = {i:round(100*v/deaths[i], 1) if deaths[i] != 0 else float('nan') for i, v in suicides.items()}
-        fdam_rate = {i:round(100*v/rounds[i], 1) for i, v in fdams.items()}
-        fdeath_rate = {i:round(100*v/rounds[i], 1) for i, v in fdeaths.items()}
-        ironman_rate = {i:round(100*v/rounds[i], 1) for i, v in ironmans.items()}
-        alive_win_rate = {i:round(100*v/rounds[i], 1) for i, v in alive_wins.items()}
-        dead_win_rate = {i:round(100*v/rounds[i], 1) for i, v, in dead_wins.items()}
-        tied_win_rate = {i:round(100*v/rounds[i], 1) for i, v, in tied_wins.items()}
+        fdam_rate = {i:round(100*v/rounds[i], 1) if rounds[i] != 0 else 'N/A' for i, v in fdams.items()}
+        fdeath_rate = {i:round(100*v/rounds[i], 1) if rounds[i] != 0 else 'N/A' for i, v in fdeaths.items()}
+        ironman_rate = {i:round(100*v/rounds[i], 1) if rounds[i] != 0 else 'N/A' for i, v in ironmans.items()}
+        alive_win_rate = {i:round(100*v/rounds[i], 1) if rounds[i] != 0 else 'N/A' for i, v in alive_wins.items()}
+        dead_win_rate = {i:round(100*v/rounds[i], 1) if rounds[i] != 0 else 'N/A' for i, v, in dead_wins.items()}
+        tied_win_rate = {i:round(100*v/rounds[i], 1) if rounds[i] != 0 else 'N/A' for i, v, in tied_wins.items()}
         kr = self.krs
 
 
@@ -1866,9 +1957,8 @@ class FullAggregation:
         raw_pve, raw_rounds, kpr, wpr, raw_ratings = self.api.cur.execute(q, (player,)).fetchall()[0]
         pve = clean_literals(raw_pve)
         clean_rounds = clean_literals(raw_rounds)
-        rounds =  [i for i in clean_literals(raw_rounds)['12M'] if i != 0][-1]
         rating = list({i:v for i, v in clean_literals(raw_ratings).items() if not math.isnan(v)}.items())[-1]
-        return round(100*sum(list(pve.values())[0])/sum(clean_rounds['12M']), 2), rounds, kpr, wpr, rating
+        return round(100*sum(list(pve.values())[0])/sum(clean_rounds['12M']), 2), sum(clean_rounds['12M']), kpr, wpr, rating
 
     def get_pvp_msg_probs(self):
         msg_probs = {}
@@ -1918,8 +2008,8 @@ class FullAggregation:
         return msg_probs
 
     @staticmethod
-    def make_intervals(m=3):
-        start = datetime.strptime('2012-01-01', '%Y-%m-%d')
+    def make_intervals(m=3, start_date='2012-01-01'):
+        start = datetime.strptime(start_date, '%Y-%m-%d')
         intervals = [datetime.strftime(start, '%Y-%m-%d')]
         current = start
         while current < datetime.today():
