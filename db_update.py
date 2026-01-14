@@ -5,8 +5,11 @@ import numpy as np
 from datetime import datetime
 from collections import defaultdict
 from db_ops import DBOPs
+from pprint import pprint
 import ast
-import math
+# import
+from urllib.error import HTTPError
+import csv
 sheet_id = "1cJnD5KPdTL1g_8CkWGiaibcpg00WKa2KgsGHzQnKnc8"
 gid = "2101501032"
 alive_url = f"https://docs.google.com/spreadsheets/d/{sheet_id}/export?format=csv&gid={gid}"
@@ -17,18 +20,21 @@ class Loader():
         self.gid = "2101501032"
         self.alive_url = f"https://docs.google.com/spreadsheets/d/{sheet_id}/export?format=csv&gid={gid}"
         self.alive_df = pd.read_csv(self.alive_url)
+        #print(self.alive_df[(self.alive_df['Up to date?'] == 'Yes')])
         self.dead_df = self.alive_df[self.alive_df["Status"]=='Dead']
-        self.alive_df = self.alive_df[self.alive_df["Status"]=="Alive"]
-        self.rounds = pd.read_csv("rounds.csv", header=None)
+        self.alive_df = self.alive_df[(self.alive_df["Status"]=="Alive") & (self.alive_df["Up to date?"] == "Yes") | (self.alive_df['Round Name'] == "Impulse")]
+        self.rounds = pd.read_csv("data/rounds.csv", header=None)
         self.update_dict = {rr: {} for rr in self.alive_df["Round Name"]}
-        self.interface = DBOPs('stats.db')
+        self.interface = DBOPs('data/stats.db')
+        self.interface.conn.execute("PRAGMA journal_mode=WAL;")
+        self.interface.conn.execute("PRAGMA synchronous=NORMAL;")
         self.players_to_be_updated = {}
         self.new_players = []
-        with open("player_map.json", "r") as f:
+        with open("data/player_map.json", "r") as f:
             self.old_player_map = json.load(f)
 
     def add_round(self, round_name, round_gid):
-        with open('rounds.csv', 'a') as f:
+        with open('data/rounds.csv', 'a') as f:
             f.write(f"\n{round_name},{round_gid}")
 
 
@@ -53,7 +59,19 @@ class Loader():
                 gid = str(self.rounds[self.rounds[0]==round][1].iloc[0])
                 print(gid)
                 round_url = f"https://docs.google.com/spreadsheets/d/{self.sheet_id}/export?format=csv&gid={gid}"
-                round_df = pd.read_csv(round_url, header=None)
+                try:
+                    round_df = pd.read_csv(round_url, header=None)
+                except HTTPError:
+                    with open('data/rounds.csv', 'r', newline='') as f:
+                        reader = list(csv.reader(f))
+                        # Keep all rows except the one we want to remove
+                        rows = [row for row in reader if row[0] != round]
+                    with open('data/rounds.csv', "w", newline="") as f:
+                        writer = csv.writer(f)
+                        writer.writerows(rows)
+
+                    return round, "Bad ID, please replace the links using the Round Insertion Tool."
+
 
                 ls_q = """
                             SELECT season_no
@@ -74,7 +92,7 @@ class Loader():
 
 
                 newest_season = round_df.iloc[0, -3]
-                print(newest_season, last_season)
+                print(round, newest_season, last_season)
                 if newest_season != last_season:
                     selected = newest_season
                     i = 1
@@ -97,7 +115,6 @@ class Loader():
                         _, k_start, t_start, imtime_start = Loader.load(round_df)
                         try:
                             Loader._load_info(round, season_to_add, t_start, imtime_start, self.update_dict)
-                            print()
                             Loader._load_teams(round, season_to_add, k_start, t_start, self.update_dict)
                             Loader._load_kills(round, season_to_add, k_start, self.update_dict)
                         except AttributeError: # if latest season is yet to be updated
@@ -126,16 +143,19 @@ class Loader():
         try:
             print("updating players")
             self.update_players() # player update
-            print("updating seasons")
-            self.update_seasons() # season_update
+            try:
+                print("updating seasons")
+                self.update_seasons() # season_update
+            except Exception as e:
+                print('error:', repr(e))
 
-            # recalculate agg stats (included in player stat function sorry for spaghetti)
-            # recalculate player stats (for relevant players)
+
             print("updating db")
             self.insert_player_stats()
         except Exception as e:
-            with open("player_map.json", "w") as f:
+            with open("data/player_map.json", "w") as f:
                 json.dump(self.old_player_map, f)
+            print(repr(e))
             return 1, str(e)
         else:
 
@@ -148,17 +168,33 @@ class Loader():
     def update_players(self):
         # add players
         ps = []
-
+        invalid = []
         for rr in self.update_dict:
             for season in self.update_dict[rr]:
                 print(rr, season)
                 season_dict = self.update_dict[rr][season]
-                print(season_dict)
-                ps.extend(season_dict['players_placement'])
+
+
+                # test for typos
+                for player in season_dict['players_placement']:
+                    if player in [p for team in season_dict['teams'].values() for p in team]:
+                        pass
+                    else:
+                        invalid.append([rr, season])
+                        break
+                if [rr, season] not in invalid:
+                    ps.extend(season_dict['players_placement'])
+
                 print(ps)
+        for game in invalid:
+            rr, season = game
+            del self.update_dict[rr][season]
+
+        pprint(self.update_dict)
+
         players = set(ps)
 
-        with open("player_map.json", "r") as f:
+        with open("data/player_map.json", "r") as f:
             player_map = json.load(f)
         print("check 1")
         # import alts
@@ -232,7 +268,7 @@ class Loader():
                       self.interface.cur.execute("SELECT player_id, current_ign FROM players ORDER BY player_id")}
 
         # overwrite json
-        with open("player_map.json", "w") as f:
+        with open("data/player_map.json", "w") as f:
             json.dump(player_map, f)
 
         # get players to be updated
@@ -241,22 +277,27 @@ class Loader():
 
 
     def update_seasons(self):
-        get_id_q = """
-                    SELECT MAX(season_id)
-                    FROM seasons
-                    """
-        old_max_id = self.interface.cur.execute(get_id_q).fetchall()[0][0]
-        with open("player_map.json", "r") as f:
+        # get_id_q = """
+        #             SELECT MAX(season_id)
+        #             FROM seasons
+        #             """
+        # old_max_id = self.interface.cur.execute(get_id_q).fetchall()[0][0]
+        with open("data/player_map.json", "r") as f:
             player_map = json.load(f)
-
-        season_id = old_max_id + 1 # works if the thing isn't empty
+        #
+        # season_id = old_max_id + 1 # works if the thing isn't empty
+        # print([[r, list(self.update_dict[r].keys())] for r in self.update_dict.keys() if self.update_dict[r] != {}])
         for rr in self.update_dict:
             rr_dict = dict(sorted(self.update_dict[rr].items(), key=lambda item: item[0]))
             for season in rr_dict:
                 # init
                 season_dict = rr_dict[season]
-                print(season_dict)
+                print(rr, season)
+                #pprint(season_dict)
                 self.interface.add_season(rr, season)
+                season_id = self.interface.cur.execute("""
+                        SELECT season_id FROM seasons WHERE round_name = ? AND season_no = ?
+                        """, (rr, season)).fetchall()[0][0]
 
                 # info
                 alias = season_dict['alias']
@@ -279,9 +320,12 @@ class Loader():
                 im_time = season_dict['im_time']
                 fdamage = player_map[season_dict['fdamage'].lower()] if type(season_dict['fdamage']) == str else 'N/A'
                 fdam_time = season_dict['fdam_time'] if season_dict['fdam_time'] != 'nan:nan:nan' else 'N/A'
+                print(date, season_id)
                 self.interface.add_season_info(season_id, alias, nr, date, eps, team_size,
                                           team_type, version, ironman, im_time,
                                           fdamage, fdam_time)
+                self.interface._save()
+                self.interface._reopen()
 
 
                 # gamemode
@@ -291,10 +335,13 @@ class Loader():
                 # teams
                 teams = list(season_dict['teams'].keys())
                 # players = list(season_dict['teams'].values())
+                print(season_id)
                 for i in range(len(teams)):
                     for player in season_dict['teams'][teams[i]]:
                         self.interface.add_season_teams(season_id, player_map[player.lower()], teams[i])
 
+                self.interface._save()
+                self.interface._reopen()
 
                 # kills
                 placement = season_dict["players_placement"]
@@ -304,6 +351,7 @@ class Loader():
                               season_dict["killers"]]
                 pve_id = [cause if cause not in placement else np.nan for cause in season_dict['killers']]
                 ks = season_dict["killstealers"]
+                print(season_id)
                 for i in range(len(placement)):
                     self.interface.add_season_killfeed(season_id, victims_id[i], death_msgs[i], killers_id[i], pve_id[i],
                                                   ks[i], season_id)
@@ -446,7 +494,6 @@ class Loader():
 
     def insert_player_stats(self):
         agg = FullAggregation(interface=self.interface, update=True)
-
 
         players_with_profiles = [i[0] for i in self.interface.cur.execute("SELECT player_id FROM player_stats").fetchall()]
 
@@ -984,6 +1031,8 @@ class Loader():
                                          )
             self.interface._save()
             self.interface._reopen()
+        self.interface.conn.commit()
+        self.interface.conn.close()
 
     @staticmethod
     def _mob_ks(death_msg):
@@ -1005,8 +1054,5 @@ if __name__ == "__main__":
     test.refresh()
     print(test.update_dict)
     print(test.players_to_be_updated)
-    test.interface._save()
-    test.interface._reopen()
-
 
 

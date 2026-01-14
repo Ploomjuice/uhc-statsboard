@@ -24,7 +24,7 @@ class RelRankPlayers:
         # setting up
 
         self.G = nx.DiGraph()
-        with open("player_map.json", "rb") as f:
+        with open("data/player_map.json", "rb") as f:
             self.player_map = json.load(f)
         for pid in self.player_map.values():
             self.G.add_node(pid)
@@ -102,7 +102,7 @@ class RelRankPlayers:
             if math.isnan(rating):
                 ratings[pid] = 0
             else:
-                ratings[pid] = rating
+                ratings[pid] = rating.item()
         pprint(ratings)
         return ratings
 

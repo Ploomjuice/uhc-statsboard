@@ -24,8 +24,9 @@ class UpdateWorker(QObject):
 
 
         except Exception as e:
-            self.error.emit(str(e))
-        else:
+            import traceback
+            self.error.emit(traceback.format_exc())
+        finally:
             self.finished.emit()
 
 
@@ -59,7 +60,9 @@ class SimulatorWorker(QObject):
 
 
         except Exception as e:
-            self.error.emit(str(e))
-            return
-        else:
+            import traceback
+            self.error.emit(traceback.format_exc())
+            print(str(e))
+
+        finally:
             self.finished.emit()

@@ -477,4 +477,3 @@ class DBOPs:
                             """
         self.cur.execute(season_killfeed_q, (season_id, dead_id, death_msg, killer_id, pve_id, ks, dupe_id))
 
-

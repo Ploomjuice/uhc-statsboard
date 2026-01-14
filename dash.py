@@ -1,10 +1,7 @@
 import ast
 import sys
 
-from matplotlib.pyplot import tight_layout
 import plotly.express as px
-import plotly.figure_factory as ff
-from db_update import Loader
 import math
 from db_ops import DBOPs
 import pandas as pd
@@ -25,17 +22,17 @@ from PySide6.QtWidgets import (
     QTableWidget,
     QTableWidgetItem,
     QLabel,
-    QMenu,
+    QSizePolicy,
     QStackedWidget,
     QScrollArea,
     QComboBox,
     QStyledItemDelegate,
-    QAbstractScrollArea
+    QAbstractScrollArea,
+    QGraphicsOpacityEffect
 )
 from PySide6.QtGui import QPixmap, QFont
 from PySide6.QtCore import QSize, Qt,  QPoint, QUrl, QThread
 from PySide6.QtWebEngineWidgets import QWebEngineView
-import random
 from data_aggregation import FullAggregation
 import requests
 from db_update import Loader
@@ -44,7 +41,6 @@ import numpy as np
 from pprint import pprint
 from scipy.stats import gaussian_kde
 import plotly.graph_objects as go
-from team_builder_simulator import Simulator
 from collections import defaultdict
 from workers import UpdateWorker, SimulatorWorker
 
@@ -56,7 +52,9 @@ class Dashboard(QMainWindow):
 
         # SEARCH VARS
         # connect to db
-        self.api = DBOPs("stats.db")
+        self.api = DBOPs("data/stats.db")
+        self.api.conn.execute("PRAGMA journal_mode=WAL;")
+        self.api.conn.execute("PRAGMA synchronous=NORMAL;")
 
         # query and preload player search info
         self.players = self.api.get_players()
@@ -74,15 +72,18 @@ class Dashboard(QMainWindow):
 
         # tool
         self.redacted_players = self.api.get_redacted()
-        # customization json
-        
+        # customization json goes here later
 
-
-
-
+        self.opaque = """
+                        QComboBox QAbstractItemView {
+                            background-color: rgba(30, 30, 30, 220);
+                        }
+                        """
         # ----- DASH SETUP -----
         self.setWindowTitle("r/ultrahardcore Recorded Round Dashboard")
-        self.setFixedSize(1600, 960)
+        self.setFixedSize(1500, 800)
+
+        #self.setBaseSize(QSize(1200,675))
         self.title_font = QFont("Helvetica", 24, QFont.Bold)
         self.desc_font = QFont("Helvetica", 12)
         self.plot_font_color = '#d6d6d6'
@@ -91,9 +92,9 @@ class Dashboard(QMainWindow):
         self.bg = QFrame()
         self.bg.setStyleSheet("QFrame {background-color: #232323}")
 
-
-        # Central widget & root layout
+        # central widget & root layout
         self.central = QWidget()
+        self.central.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
         self.setCentralWidget(self.central)
         root_layout = QVBoxLayout(self.central)  # vertical: top bar + content
 
@@ -104,7 +105,7 @@ class Dashboard(QMainWindow):
 
         # Logo
         logo_label = QLabel()
-        pixmap = QPixmap("32xautumn.png")  # replace with your logo path
+        pixmap = QPixmap("img/32xautumn.png")
         if not pixmap.isNull():
             logo_label.setPixmap(pixmap.scaledToHeight(60))
 
@@ -114,7 +115,7 @@ class Dashboard(QMainWindow):
         title_label.setFont(title_font)
 
         # version
-        version = QLabel("Version: Beta 2026.01.04")
+        version = QLabel("Version: Beta 2026.01.10")
         version_font = QFont("Helvetica", 8)
         version.setFont(version_font)
 
@@ -309,7 +310,7 @@ class Dashboard(QMainWindow):
         pic_text = QWidget()
         bio_layout = QHBoxLayout(pic_text)
         pic_label = QLabel()
-        pixmap = QPixmap("mi.jpg")
+        pixmap = QPixmap("img/mi.jpg")
         pic_label.setPixmap(pixmap.scaledToHeight(300))
         bio_layout.setContentsMargins(100, 0, 100, 0)
         bio_layout.addWidget(pic_label)
@@ -451,6 +452,7 @@ class Dashboard(QMainWindow):
         ])
         self.stat_select.setFixedWidth(200)
         self.stat_select.currentTextChanged.connect(self._populate_leaderboard)
+        self.stat_select.setStyleSheet(self.opaque)
 
         # year choice
         years = [str(i) for i in range(2012, self.today.year+1)]
@@ -460,6 +462,7 @@ class Dashboard(QMainWindow):
         self.year_select.setCurrentIndex(len(years)-1)
         self.year_select.setFixedWidth(90)
         self.year_select.currentTextChanged.connect(self._populate_leaderboard)
+        self.year_select.setStyleSheet(self.opaque)
 
         # minimum games
         mg = QWidget()
@@ -481,7 +484,7 @@ class Dashboard(QMainWindow):
                 height: 18px;
             }
             QCheckBox::indicator:checked {
-                image: url(redacted.png)
+                image: url(img/redacted.png)
             }
         """)
         self.redacted.setChecked(False)
@@ -494,6 +497,7 @@ class Dashboard(QMainWindow):
         self.leaderboard_view.addItems(self.views)
         self.leaderboard_view.setCurrentText("Main Board")
         self.leaderboard_view.currentTextChanged.connect(self._switch_board)
+        self.leaderboard_view.setStyleSheet(self.opaque)
 
         main_choices = QWidget()
         main_choices_layout = QHBoxLayout(main_choices)
@@ -544,7 +548,7 @@ class Dashboard(QMainWindow):
                         height: 18px;
                     }
                     QCheckBox::indicator:checked {
-                        image: url(redacted.png)
+                        image: url(img/redacted.png)
                     }
                 """)
         self.extra_redacted.setChecked(False)
@@ -559,10 +563,11 @@ class Dashboard(QMainWindow):
 
         view_label = QLabel("<h4>Order Deadliest Party By:")
         self.deadly_view = QComboBox()
-        self.deadly_view.setFixedWidth(60)
-        self.deadly_view.addItems(["kills", 'pct_killed'])
+        self.deadly_view.setFixedWidth(100)
+        self.deadly_view.addItems(["Kills", '%Roster'])
         self.deadly_view.setCurrentText('kills')
         self.deadly_view.currentTextChanged.connect(self._populate_deadliest)
+        self.deadly_view.setStyleSheet(self.opaque)
 
         bar_layout.addWidget(ts_label)
         bar_layout.addWidget(self.extra_ts)
@@ -611,9 +616,9 @@ class Dashboard(QMainWindow):
         de_layout.addWidget(de_label)
         de_layout.addWidget(self.deadliest)
 
-        extra_boards_layout.addWidget(de)
-        extra_boards_layout.addWidget(im)
-        extra_boards_layout.addWidget(fd)
+        extra_boards_layout.addWidget(de, 1)
+        extra_boards_layout.addWidget(im, 1)
+        extra_boards_layout.addWidget(fd, 1)
         extra_stats_layout.addWidget(extra_boards)
 
 
@@ -652,15 +657,17 @@ class Dashboard(QMainWindow):
         self.scatter_x = QComboBox()
         self.scatter_x.addItems(scatter_features)
         self.scatter_x.setCurrentText("Death Count")
-        self.scatter_x.setFixedWidth(120)
+        self.scatter_x.setFixedWidth(160)
         self.scatter_x.currentTextChanged.connect(self._make_leaderboard_scatter)
+        self.scatter_x.setStyleSheet(self.opaque)
 
         y_label = QLabel("<h4>Y-Axis: </h4>")
         self.scatter_y = QComboBox()
         self.scatter_y.addItems(scatter_features)
         self.scatter_y.setCurrentText("Kill Count")
-        self.scatter_x.setFixedWidth(120)
+        self.scatter_y.setFixedWidth(160)
         self.scatter_y.currentTextChanged.connect(self._make_leaderboard_scatter)
+        self.scatter_y.setStyleSheet(self.opaque)
 
         scatter_minimum_games_label = QLabel("<h4>Minimum Rounds Played: </h4>")
         self.scatter_minimum_games = QLineEdit()
@@ -817,15 +824,15 @@ class Dashboard(QMainWindow):
                 self.leaderboard.setItem(idx, 11, QTableWidgetItem(
                     str(stat_dict['PvE Death Count'][p]) + f' ({stat_dict["PvE Death Rate"][p]})%'))
                 self.leaderboard.setItem(idx, 12, QTableWidgetItem(
-                    str(stat_dict['Ironman Count'][p]) + f' ({stat_dict['Ironman Rate'][p]}%)'))
+                    str(stat_dict['Ironman Count'][p]) + f' ({stat_dict["Ironman Rate"][p]}%)'))
                 self.leaderboard.setItem(idx, 13, QTableWidgetItem(
-                    str(stat_dict['Top Frag Count'][p]) + f' ({stat_dict['Top Frag Rate'][p]}%)'))
+                    str(stat_dict['Top Frag Count'][p]) + f' ({stat_dict["Top Frag Rate"][p]}%)'))
                 self.leaderboard.setItem(idx, 14, QTableWidgetItem(
-                    str(stat_dict['First Damage Count'][p]) + f' ({stat_dict['First Damage Rate'][p]}%)'))
+                    str(stat_dict['First Damage Count'][p]) + f' ({stat_dict["First Damage Rate"][p]}%)'))
                 self.leaderboard.setItem(idx, 15, QTableWidgetItem(
-                    str(stat_dict['First Death Count'][p]) + f' ({stat_dict['First Death Rate'][p]}%)'))
+                    str(stat_dict['First Death Count'][p]) + f' ({stat_dict["First Death Rate"][p]}%)'))
                 self.leaderboard.setItem(idx, 16, QTableWidgetItem(
-                    str(stat_dict['Suicide Count'][p]) + f' ({stat_dict['Suicide Rate'][p]}%)'))
+                    str(stat_dict['Suicide Count'][p]) + f' ({stat_dict["Suicide Rate"][p]}%)'))
                 self.leaderboard.setItem(idx, 17, QTableWidgetItem(
                     str(stat_dict['Team Kill Count'][p])))
 
@@ -1154,6 +1161,7 @@ class Dashboard(QMainWindow):
         self.rounds_played = QLabel()
         self.graph_title = QLabel()
         self.choose_year = QComboBox()
+        self.choose_year.setStyleSheet(self.opaque)
         self.choose_year.currentTextChanged.connect(self.user_rating_year_update)
         self.rating_graph = QWebEngineView()
         self.rating_graph.setFixedSize(QSize(200,200))
@@ -1230,11 +1238,13 @@ class Dashboard(QMainWindow):
         self.graph_choose = QComboBox()
         self.graph_choose.addItems(["Kill Count", "Death Count", "Round Count", "KDR", "KPR", "PvE", "Win Count"])
         self.graph_choose.currentIndexChanged.connect(self.create_stat_graph)
+        self.graph_choose.setStyleSheet(self.opaque)
         interval_label = QLabel()
         interval_label.setText("<h4>Interval</h4>")
         self.interval_choose = QComboBox()
         self.interval_choose.addItems(['3M', '6M', '12M'])
         self.interval_choose.currentIndexChanged.connect(self.create_stat_graph)
+        self.interval_choose.setStyleSheet(self.opaque)
 
         choices_layout.addWidget(graph_label)
         choices_layout.addWidget(self.graph_choose)
@@ -1379,19 +1389,19 @@ class Dashboard(QMainWindow):
 
 
             except KeyError:
-                pfp = QPixmap("questionmark.png")
+                pfp = QPixmap("img/questionmark.png")
                 self.skin_explanation.setText(
                     f"<p>Can't find {ign}'s skin...<br> Maybe they changed their username?</p>"
                 )
             except requests.exceptions.ConnectTimeout or requests.exceptions.ConnectionError or requests.exceptions.ReadTimeout:
-                pfp = QPixmap("questionmark.png")
+                pfp = QPixmap("img/questionmark.png")
                 self.skin_explanation.setText(f"""<p>Mojang's API seems to be down...""")
 
             else:
                 skin_request = requests.get(f"https://api.mineatar.io/face/{uuid}?size=32").content
                 pfp.loadFromData(skin_request)
         else:
-            pfp = QPixmap("redacted.png")
+            pfp = QPixmap("img/redacted.png")
             if self.selected_data['redacted'] == 'X':
                 self.skin_explanation.setText("<strong>Redacted Player</strong>")
             elif self.selected_data['redacted'] == 'C':
@@ -1701,7 +1711,8 @@ class Dashboard(QMainWindow):
                 year = 2012 + math.floor(period/2)
                 labels.append(f'{year}-H{half}')
         else:
-            labels = [str(y) for y in np.arange(2012, self.today.year+1, 1).tolist()]
+            last_recorded_year = int(list(self.selected_data["rating"].keys())[-1])
+            labels = [str(y) for y in np.arange(2012, last_recorded_year+1, 1).tolist()]
 
         if stat == 'Win Count':
             labels = [str(y) for y in np.arange(2012, self.today.year + 1, 1).tolist()]
@@ -2027,14 +2038,14 @@ class Dashboard(QMainWindow):
         season_scroll.setWidgetResizable(True)
         self.season_list.setOpenExternalLinks(False)
         self.season_list.linkActivated.connect(self._link_handle)
-        season_scroll.setFixedSize(400, 200)
+        season_scroll.setFixedSize(400, 128)
         season_scroll.setWidget(self.season_list)
 
         # assemble text side
         left_layout.addWidget(stats_title)
-        left_layout.addWidget(stats)
+        left_layout.addWidget(stats, 7)
         left_layout.addWidget(season_title)
-        left_layout.addWidget(season_scroll)
+        left_layout.addWidget(season_scroll, 2)
 
 
         # graphs side
@@ -2044,12 +2055,12 @@ class Dashboard(QMainWindow):
         self.roster_size_graph = QWebEngineView()
         self.roster_size_graph.setAttribute(Qt.WA_TranslucentBackground, True)
         self.roster_size_graph.page().setBackgroundColor(Qt.transparent)
-        self.roster_size_graph.setFixedSize(700, 240)
+        self.roster_size_graph.setFixedSize(600, 240)
         player_skill_title = QLabel("<h2>Player Rating Distribution Per Season</h2>")
         self.player_skill_dist = QWebEngineView()
         self.player_skill_dist.setAttribute(Qt.WA_TranslucentBackground, True)
         self.player_skill_dist.page().setBackgroundColor(Qt.transparent)
-        self.player_skill_dist.setFixedSize(700, 240)
+        self.player_skill_dist.setFixedSize(600, 240)
 
         right_layout.addWidget(roster_size_title)
         right_layout.addWidget(self.roster_size_graph)
@@ -2071,29 +2082,29 @@ class Dashboard(QMainWindow):
         self.round_label.setText(f"<h1>{rr}</h1>")
 
         self.stats_left.setText(f"""
-            <h3>Number of Seasons</h3>
+            <h4>Number of Seasons</h4>
             <p>{self.round_dict['season_count']}</p>
-            <h3>Average Episode Count</h3>
+            <h4>Average Episode Count</h4>
             <p>{self.round_dict['avg_eps']}</p>
-            <h3>Latest Season Release</h3>
+            <h4>Latest Season Release</h4>
             <p>{self.round_dict['season_dates'][-1]}</p>
-            <h3>Days Since Last Season</h3>
+            <h4>Days Since Last Season</h4>
             <p>{self.round_dict['since_last_season']}</p>
-            <h3>Release Date of First Season</h3>
+            <h4>Release Date of First Season</h4>
             <p>{self.round_dict['season_dates'][0]}</p>
             
         """)
         year = self.round_dict['latest_year']
         self.stats_right.setText(f"""
-            <h3>Total Unique Players</h3>
+            <h4>Total Unique Players</h4>
             <p>{self.round_dict['roster_size']}</p>
-            <h3>Median Rating ({year})</h3>
+            <h4>Median Rating ({year})</h4>
             <p>{round(self.round_dict['median_ratings'][-1], 2)}</p>
-            <h3>Mean Rating ({year})</h3>
+            <h4>Mean Rating ({year})</h4>
             <p>{round(self.round_dict['mean_ratings'][-1], 2)}</p>
-            <h3>Rating Standard Deviation ({year})</h3>
+            <h4>Rating Standard Deviation ({year})</h4>
             <p>{round(self.round_dict['std_ratings'][-1], 2)}</p>
-            <h3>PvE Death Rate (% of Deaths)</h3>
+            <h4>PvE Death Rate (% of Deaths)</h4>
             <p>{self.round_dict['percent_pve']}%</p>
             
         """)
@@ -2191,10 +2202,14 @@ class Dashboard(QMainWindow):
         sig_stats_title = QLabel("<h2>Notable Stats</h2>")
         self.sig_stats = QLabel()
         self.sig_stats.setWordWrap(True)
+        newcomers_container = QWidget()
+        newcomers_layout = QVBoxLayout(newcomers_container)
+        newcomers_layout.setAlignment(Qt.AlignmentFlag.AlignTop)
         newcomers_title = QLabel("<h2>Newcomers</h2>")
         self.newcomers = QLabel()
+        newcomers_layout.addWidget(self.newcomers)
         newcomers_scroll = QScrollArea()
-        newcomers_scroll.setWidget(self.newcomers)
+        newcomers_scroll.setWidget(newcomers_container)
         newcomers_scroll.setFixedHeight(220)
         newcomers_scroll.setWidgetResizable(True)
 
@@ -2405,15 +2420,6 @@ class Dashboard(QMainWindow):
         self.player_search_line = QLineEdit()
         self.player_search_line.setPlaceholderText("Enter Player IGN: ")
         self.player_search_results = QLabel()
-        html = "<p>"
-        for player in self.players:
-            html += f"""<br> <a href='roster:{player}' class='link' style=
-                                        "font: 16px 'Helvetica';
-                                        text-decoration: none;
-                                        color: {self.color_theme};
-                                        ">
-                                        {player}</a>"""
-        self.player_search_results.setText(html+'</p>')
         self.player_search_results.setOpenExternalLinks(False)
         self.player_search_results.linkActivated.connect(self._link_handle)
         self.player_search_line.textChanged.connect(self._fill_simulator_browser)
@@ -2437,7 +2443,7 @@ class Dashboard(QMainWindow):
         note = QLabel("""<p>Note: Ratings are left adjustable as they are experimental and based on last year of activity,
                       please feel free to change them to your discretion (keep in mind that a score difference of 10
                       results in about a 76% chance to win an equal fight for a higher-rated player, and that for me,
-                      the typical player has a rating of around 21).  Also, any player with a team name left blank will
+                      the typical player has a rating of around 14-16).  Also, any player with a team name left blank will
                       be treated as a solo.""")
         note.setWordWrap(True)
 
@@ -2535,6 +2541,7 @@ class Dashboard(QMainWindow):
 
         layout.addWidget(title)
         layout.addWidget(columns)
+        self._fill_simulator_browser()
         return content
 
     def _fill_simulator_browser(self):
@@ -2630,6 +2637,8 @@ class Dashboard(QMainWindow):
             pve = self.roster_table.item(row, 5).text()
             unsorted_rows.append([player, team, rating, rounds, kpr, wr, pve])
 
+
+
         sorted_rows = sorted(unsorted_rows, key=lambda x: x[1])
         self.roster_table.setRowCount(0)
 
@@ -2649,6 +2658,11 @@ class Dashboard(QMainWindow):
             self.roster_table.setItem(last, 3, QTableWidgetItem(kpr))
             self.roster_table.setItem(last, 4, QTableWidgetItem(wr))
             self.roster_table.setItem(last, 5, QTableWidgetItem(pve))
+
+            delete = QPushButton("Delete")
+            delete.clicked.connect(self._delete_from_roster)
+
+            self.roster_table.setCellWidget(last, 6, delete)
 
     def simulate(self):
         self.simulator_probs.clearContents()
@@ -2729,9 +2743,9 @@ class Dashboard(QMainWindow):
             self.simulator_probs.setItem(i, 1, QTableWidgetItem(str(stats['team'])))
             self.simulator_probs.setItem(i, 2, QTableWidgetItem(str(stats['avg_kills'])))
             self.simulator_probs.setItem(i, 3, QTableWidgetItem(str(stats['avg_i_placement'])
-                                                                + f' ({stats['avg_t_placement']})'))
+                                                                + f' ({stats["avg_t_placement"]})'))
             self.simulator_probs.setItem(i, 4, QTableWidgetItem(str(stats['win_count'])
-                                                                + f' ({stats['win_pct']}%)'))
+                                                                + f' ({stats["win_pct"]}%)'))
     def simulate_done(self):
         self.sim_message.setText("Simulations complete!")
         self.sim_button.setEnabled(True)
@@ -2790,6 +2804,7 @@ class Dashboard(QMainWindow):
 
         self.round_choice = QComboBox()
         self.round_choice.setPlaceholderText("Select Round to Add")
+        self.round_choice.setStyleSheet(self.opaque)
         add_link_layout.addWidget(self.round_choice)
 
         self.link_box = QTextEdit()
@@ -2866,6 +2881,7 @@ class Dashboard(QMainWindow):
         redact_layout = QHBoxLayout(redact)
         self.select_reason = QComboBox()
         self.select_reason.addItems(['Misconduct', 'Cheating', "I don't like them"])
+        self.select_reason.setStyleSheet(self.opaque)
         self.redacted_username = QLineEdit()
         self.redacted_username.setPlaceholderText("Please type the username here! (case-sensitive)")
         self.redact_button = QPushButton("Redact")
@@ -2893,10 +2909,12 @@ class Dashboard(QMainWindow):
         layout.addWidget(unredact)
         layout.addWidget(self.unredact_label)
 
-        layout.addStretch(2)
-        return content
+        page_scroll = QScrollArea()
+        page_scroll.setWidget(content)
+        return page_scroll
 
     def update(self):
+        self.update_status.blockSignals(False)
         self.update_button.setEnabled(False)
 
         self.thread = QThread()
@@ -2914,18 +2932,21 @@ class Dashboard(QMainWindow):
         self.update_status.setText("Now Updating... Please don't close the app until the update is complete!")
 
         self.thread.start()
-        self.api = DBOPs("stats.db")
+        self.api.conn.commit()
+        self.api = DBOPs("data/stats.db")
+        self.fetch = FullAggregation(interface=self.api)
 
         self.players = self.api.get_players()
         self.rounds = self.api.get_rounds()
 
     def update_done(self):
-        self.update_status.setText("Update Complete! (Please restart to see new players and rounds.)"
+        self.update_status.setText("Update Complete! (Please restart the app to complete the update!)"
                                    "  If something feels off, please report the issue to plumjuice!")
         self.update_button.setEnabled(True)
 
     def update_error(self, msg):
         self.update_status.setText(f"Error: {msg}")
+        self.update_status.blockSignals(True)
         self.update_button.setEnabled(True)
 
     def get_unadded_rounds(self):
@@ -2962,7 +2983,7 @@ class Dashboard(QMainWindow):
             self.redact_label.setText(f"Successfully redacted {player}!")
             self.redacted_username.clear()
             self.api._save()
-            self.api = DBOPs("stats.db")
+            self.api = DBOPs("data/stats.db")
 
             self.fetch = FullAggregation(interface=self.api)
 
@@ -2978,7 +2999,7 @@ class Dashboard(QMainWindow):
             self.unredact_label.setText(f"Successfully un-redacted {player}!")
             self.unredacted_username.clear()
             self.api._save()
-            self.api = DBOPs("stats.db")
+            self.api = DBOPs("data/stats.db")
             self.fetch = FullAggregation(interface=self.api)
 
 

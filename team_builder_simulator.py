@@ -31,17 +31,20 @@ class Simulator:
         self.players_copy = self.players.copy()
         self.teams_copy = self.teams.copy()
 
-        self.api = DBOPs("stats.db")
+        self.api = DBOPs("data/stats.db")
         self.fetch = FullAggregation()
         self.scaler = MinMaxScaler()
         #self.base_clean_chance = 0.2
-
+        print("i got here")
         # likelihoods
         self.pve_chances = self.overall_pve_likelihood()
+        print("i got here")
         self.pvp_chances = self.overall_pvp_likelihood()
+        print("i got here")
         self.pve, self.rounds = self.pve_death_rates()
+        print("i got here")
         self.player_pve_death_rates = {p:(i/j).iat[0] for (p, i), j in zip(self.pve.items(), self.rounds.values())}
-
+        print("after the sql stuff")
 
         self.player_pve_chances = {p: self.generate_pve_probabilities(p) for p in self.players}
         self.player_pvp_chances = {p: self.generate_pvp_probabilities(p) for p in self.players}
@@ -56,9 +59,9 @@ class Simulator:
 
         self.all_simulations = []
 
-        with open("pve_probs.json", 'r') as f:
+        with open("data/pve_probs.json", 'r') as f:
             self.pve_msg_chances = json.load(f)
-        with open("pvp_probs.json", 'r') as f:
+        with open("data/pvp_probs.json", 'r') as f:
             self.pvp_msg_chances = json.load(f)
 
     def reinit(self):
@@ -210,7 +213,7 @@ class Simulator:
                 self.adjacent[player] = [r for r in (new - 1, new, new + 1) if self.regions - 1 >= r >= 0]
 
 
-            while tick < late_end:
+            while tick < late_end and len(self.teams) > 1:
 
                 # order: move -> events -> move -> events ->...
                 self.change_player_positions(2)
@@ -271,7 +274,7 @@ class Simulator:
         """
         print("pve time")
 
-        place = len(self.kill_board)
+        place = len(self.kill_board) - 1
         # will an event happen?
         chance = self.pve_chances[place]
         occurrence = np.random.rand() <= chance
@@ -280,7 +283,7 @@ class Simulator:
             print("Event")
 
             # select a player
-            probabilities_at_tick = {player:chances[place]*self.stats[player][4] if type(chances[place]) == int else
+            probabilities_at_tick = {player:chances[place]*self.stats[player][4] if isinstance(chances[place], float) else
                                      chances[place].item()*self.stats[player][4] for player, chances in self.player_pve_chances.items()
                                      if player in self.players}
             #print(probabilities_at_tick)
@@ -665,6 +668,8 @@ class Simulator:
 
             dist = pdf/sum(pdf) * self.player_pve_death_rates[ign]
 
+        print(dist)
+
         return [i if i else 0.0001 for i in dist]
 
     def overall_pve_likelihood(self):
@@ -700,7 +705,7 @@ class Simulator:
 
             WHERE k.pve_id IS NOT NULL AND k.pve_id != "Nothing"
         """
-        placements = [i[0] for i in self.api.cur.execute(q).fetchall()]
+        placements = [i[0] for i in self.api.cur.execute(q).fetchall() if i[0]]
         kde = gaussian_kde(placements)
         x = np.arange(0, 1, 1 / self.n_players)
         pdf = kde(x)
@@ -738,7 +743,7 @@ class Simulator:
             JOIN roster_sizes r ON k.season_id = r.season_id
 
         """
-        placements = [i[0] for i in self.api.cur.execute(q).fetchall()]
+        placements = [i[0] for i in self.api.cur.execute(q).fetchall() if i[0]]
         kde = gaussian_kde(placements)
         x = np.arange(0, 1, 1 / self.n_players)
         pdf = kde(x)
