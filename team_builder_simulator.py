@@ -31,7 +31,7 @@ class Simulator:
         self.players_copy = self.players.copy()
         self.teams_copy = self.teams.copy()
 
-        self.api = DBOPs("stats.db")
+        self.api = DBOPs("data/stats.db")
         self.fetch = FullAggregation()
         self.scaler = MinMaxScaler()
         #self.base_clean_chance = 0.2
@@ -59,9 +59,9 @@ class Simulator:
 
         self.all_simulations = []
 
-        with open("pve_probs.json", 'r') as f:
+        with open("data/pve_probs.json", 'r') as f:
             self.pve_msg_chances = json.load(f)
-        with open("pvp_probs.json", 'r') as f:
+        with open("data/pvp_probs.json", 'r') as f:
             self.pvp_msg_chances = json.load(f)
 
     def reinit(self):
@@ -283,7 +283,7 @@ class Simulator:
             print("Event")
 
             # select a player
-            probabilities_at_tick = {player:chances[place]*self.stats[player][4] if type(chances[place]) == int else
+            probabilities_at_tick = {player:chances[place]*self.stats[player][4] if isinstance(chances[place], float) else
                                      chances[place].item()*self.stats[player][4] for player, chances in self.player_pve_chances.items()
                                      if player in self.players}
             #print(probabilities_at_tick)
@@ -667,6 +667,8 @@ class Simulator:
             pdf = kde(x)
 
             dist = pdf/sum(pdf) * self.player_pve_death_rates[ign]
+
+        print(dist)
 
         return [i if i else 0.0001 for i in dist]
 

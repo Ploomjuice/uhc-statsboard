@@ -24,7 +24,7 @@ class RelRankPlayers:
         # setting up
 
         self.G = nx.DiGraph()
-        with open("player_map.json", "rb") as f:
+        with open("data/player_map.json", "rb") as f:
             self.player_map = json.load(f)
         for pid in self.player_map.values():
             self.G.add_node(pid)
@@ -95,6 +95,8 @@ class RelRankPlayers:
             # head-to-head metadata
             perf_cons_score = self.perf_score[pid]
 
+            print(adj_pr)
+
 
 
             rating = round(100 * (adj_pr * 0.5 + kpr * 0.25 + perf_cons_score * 0.25), 3)
@@ -102,7 +104,7 @@ class RelRankPlayers:
             if math.isnan(rating):
                 ratings[pid] = 0
             else:
-                ratings[pid] = rating
+                ratings[pid] = rating.item()
         pprint(ratings)
         return ratings
 

@@ -97,9 +97,9 @@ class FullAggregation:
         if interface:
             self.api = interface
         else:
-            self.api = DBOPs("stats.db")
+            self.api = DBOPs("data/stats.db")
 
-        with open("player_map.json", "r") as f:
+        with open("data/player_map.json", "r") as f:
             self.player_map = json.load(f)
         self.divs = [3, 6]
         if reinit:
@@ -116,7 +116,7 @@ class FullAggregation:
         # with open("aggs.json")
 
     def load_file(self):
-        with open("all_agg_stats.pkl", "rb") as f:
+        with open("data/all_agg_stats.pkl", "rb") as f:
             self.stats = pickle.load(f)
             self.kill_counter = self.stats['kills']
             self.kpy = self.stats['kpy']
@@ -271,17 +271,17 @@ class FullAggregation:
             'yearly_ratings': self.yearly_ratings
 
         }
-        with open("all_agg_stats.pkl", "wb") as f:
+        with open("data/all_agg_stats.pkl", "wb") as f:
             pickle.dump(self.all_agg_stats, f)
 
         players = {ign.lower(): pid for pid, ign in self.api.cur.execute("""SELECT player_id, current_ign FROM players""").fetchall()}
-        with open("player_map.json", "w") as f:
+        with open("data/player_map.json", "w") as f:
             json.dump(players, f)
 
-        with open("pve_probs.json", "w") as f:
+        with open("data/pve_probs.json", "w") as f:
             json.dump(self.get_pve_msg_probs(), f)
 
-        with open("pvp_probs.json", "w") as f:
+        with open("data/pvp_probs.json", "w") as f:
             json.dump(self.get_pvp_msg_probs(), f)
 
     def update_latest(self):
@@ -509,18 +509,18 @@ class FullAggregation:
             'yearly_ratings': self.yearly_ratings
 
         }
-        with open("all_agg_stats.pkl", "wb") as f:
+        with open("data/all_agg_stats.pkl", "wb") as f:
             pickle.dump(self.all_agg_stats, f)
 
         players = {ign.lower(): pid for pid, ign in
                    self.api.cur.execute("""SELECT player_id, current_ign FROM players""").fetchall()}
-        with open("player_map.json", "w") as f:
+        with open("data/player_map.json", "w") as f:
             json.dump(players, f)
 
-        with open("pve_probs.json", "w") as f:
+        with open("data/pve_probs.json", "w") as f:
             json.dump(self.get_pve_msg_probs(), f)
 
-        with open("pvp_probs.json", "w") as f:
+        with open("data/pvp_probs.json", "w") as f:
             json.dump(self.get_pvp_msg_probs(), f)
 
     def init_new_players(self):
@@ -1433,6 +1433,7 @@ class FullAggregation:
         season_gaps = [season_datetimes[i+1]-season_datetimes[i] for i in range(len(season_datetimes)-1)]
         since_last_season = (datetime.today() - season_datetimes[-1]).days
         last_season_year = season_datetimes[-1].year
+        print(last_season_year)
         season_gaps = [i.days for i in season_gaps]
 
         player_ratings_q = """
@@ -1451,9 +1452,10 @@ class FullAggregation:
 
         roster_ratings = {p: clean_literals(i) for p, i in players_ratings}
         rating_df = pd.DataFrame(roster_ratings.values())
-        median_ratings = [np.median(rating_df[y].dropna()) for y in rating_df][first_year-2012:last_season_year+1]
-        mean_ratings = [np.mean(rating_df[y]) for y in rating_df][first_year-2012:last_season_year+1]
-        std_ratings = [np.std(rating_df[y]) for y in rating_df][first_year-2012:last_season_year+1]
+        median_ratings = [np.median(rating_df[y].dropna()).item() for y in rating_df][first_year-2012:(last_season_year-2012+1)]
+        print(median_ratings)
+        mean_ratings = [np.mean(rating_df[y]) for y in rating_df][first_year-2012:last_season_year-2012+1]
+        std_ratings = [np.std(rating_df[y]) for y in rating_df][first_year-2012:last_season_year-2012+1]
 
         pve_deaths_q = """
             ,pve_deaths AS (

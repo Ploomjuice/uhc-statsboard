@@ -8,7 +8,7 @@ from datetime import datetime
 
 sheet_id = "1cJnD5KPdTL1g_8CkWGiaibcpg00WKa2KgsGHzQnKnc8"
 
-rr_df = pd.read_csv("rounds.csv", header=None)
+rr_df = pd.read_csv("data/rounds.csv", header=None)
 rounds = rr_df[0].to_list()
 gids = rr_df[1].to_list()
 master_dict = {rr: {} for rr in rounds}
@@ -319,7 +319,7 @@ def full_load(round_filename):
 
 # save
 if __name__ == '__main__':
-    full_load('rounds.csv')
+    full_load('data/rounds.csv')
     with open('master_dict.json', 'w') as f:
         json.dump(master_dict, f, indent=4)
 

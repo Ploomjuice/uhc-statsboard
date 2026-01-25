@@ -23,18 +23,18 @@ class Loader():
         #print(self.alive_df[(self.alive_df['Up to date?'] == 'Yes')])
         self.dead_df = self.alive_df[self.alive_df["Status"]=='Dead']
         self.alive_df = self.alive_df[(self.alive_df["Status"]=="Alive") & (self.alive_df["Up to date?"] == "Yes") | (self.alive_df['Round Name'] == "Impulse")]
-        self.rounds = pd.read_csv("rounds.csv", header=None)
+        self.rounds = pd.read_csv("data/rounds.csv", header=None)
         self.update_dict = {rr: {} for rr in self.alive_df["Round Name"]}
-        self.interface = DBOPs('stats.db')
+        self.interface = DBOPs('data/stats.db')
         self.interface.conn.execute("PRAGMA journal_mode=WAL;")
         self.interface.conn.execute("PRAGMA synchronous=NORMAL;")
         self.players_to_be_updated = {}
         self.new_players = []
-        with open("player_map.json", "r") as f:
+        with open("data/player_map.json", "r") as f:
             self.old_player_map = json.load(f)
 
     def add_round(self, round_name, round_gid):
-        with open('rounds.csv', 'a') as f:
+        with open('data/rounds.csv', 'a') as f:
             f.write(f"\n{round_name},{round_gid}")
 
 
@@ -52,7 +52,7 @@ class Loader():
             msg = "Update Stopped! Before retrying, please add the following rounds and their corresponding GID's:"
             for i in unknowns:
                 msg += f'\n {i}'
-            return unknowns, msg
+            raise NameError(msg)
 
         else: # load new seasons of known rounds
             for round in self.update_dict:
@@ -62,11 +62,11 @@ class Loader():
                 try:
                     round_df = pd.read_csv(round_url, header=None)
                 except HTTPError:
-                    with open('rounds.csv', 'r', newline='') as f:
+                    with open('data/rounds.csv', 'r', newline='') as f:
                         reader = list(csv.reader(f))
                         # Keep all rows except the one we want to remove
                         rows = [row for row in reader if row[0] != round]
-                    with open('rounds.csv', "w", newline="") as f:
+                    with open('data/rounds.csv', "w", newline="") as f:
                         writer = csv.writer(f)
                         writer.writerows(rows)
 
@@ -153,7 +153,7 @@ class Loader():
             print("updating db")
             self.insert_player_stats()
         except Exception as e:
-            with open("player_map.json", "w") as f:
+            with open("data/player_map.json", "w") as f:
                 json.dump(self.old_player_map, f)
             print(repr(e))
             return 1, str(e)
@@ -194,7 +194,7 @@ class Loader():
 
         players = set(ps)
 
-        with open("player_map.json", "r") as f:
+        with open("data/player_map.json", "r") as f:
             player_map = json.load(f)
         print("check 1")
         # import alts
@@ -268,7 +268,7 @@ class Loader():
                       self.interface.cur.execute("SELECT player_id, current_ign FROM players ORDER BY player_id")}
 
         # overwrite json
-        with open("player_map.json", "w") as f:
+        with open("data/player_map.json", "w") as f:
             json.dump(player_map, f)
 
         # get players to be updated
@@ -282,7 +282,7 @@ class Loader():
         #             FROM seasons
         #             """
         # old_max_id = self.interface.cur.execute(get_id_q).fetchall()[0][0]
-        with open("player_map.json", "r") as f:
+        with open("data/player_map.json", "r") as f:
             player_map = json.load(f)
         #
         # season_id = old_max_id + 1 # works if the thing isn't empty
@@ -1031,8 +1031,7 @@ class Loader():
                                          )
             self.interface._save()
             self.interface._reopen()
-        self.interface.conn.commit()
-        self.interface.conn.close()
+
 
     @staticmethod
     def _mob_ks(death_msg):
