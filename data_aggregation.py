@@ -1818,17 +1818,31 @@ class FullAggregation:
                         FROM season_killfeed
                         GROUP BY dupe_id
                     ),
-                    toX AS (
+                    ffa AS (
                         SELECT i.season_id, s.round_name, s.season_no
                         FROM season_info i 
                         JOIN seasons s ON i.season_id = s.season_id
                         WHERE i.team_type = "FFA" AND i.season_id IN valid_seasons
+                    ),
+                    ffa_kills AS (
+                        SELECT k.season_id, p.current_ign as team_members, COUNT(k.killer_id) AS kills
+                        FROM season_killfeed k
+                        JOIN ffa ON k.season_id = ffa.season_id
+                        JOIN players p ON k.killer_id = p.player_id
+                        GROUP BY k.season_id, k.killer_id
+                        ORDER BY kills DESC
+                    
+                    ),
+                    roster_size AS (
+                        SELECT season_id, COUNT(DISTINCT k.dead_id) as size
+                        FROM season_killfeed k
+                        GROUP BY season_id
                     )
-                    SELECT p.current_ign, toX.round_name, toX.season_no, COUNT(k.killer_id) AS kills
-                    FROM season_killfeed k
-                    JOIN toX ON k.season_id = toX.season_id
-                    JOIN players p ON k.killer_id = p.player_id
-                    GROUP BY k.season_id, k.killer_id
+                    SELECT f.team_members, ffa.round_name, ffa.season_no, f.kills,
+                        ROUND(100*CAST(f.kills AS FLOAT)/CAST(r.size AS FLOAT), 1) AS pct_killed
+                    FROM ffa_kills f
+                    JOIN ffa ON f.season_id = ffa.season_id
+                    JOIN roster_size r ON f.season_id = r.season_id
                     ORDER BY {mode} DESC
                     
         """
@@ -1874,11 +1888,6 @@ class FullAggregation:
                         ORDER BY kills
                     ),
                     roster_size AS (
-                        SELECT season_id, COUNT(DISTINCT k.dead_id) as size
-                        FROM season_killfeed k
-                        GROUP BY season_id
-                    ),
-                    roster AS (
                         SELECT season_id, COUNT(DISTINCT k.dead_id) as size
                         FROM season_killfeed k
                         GROUP BY season_id
@@ -1939,10 +1948,12 @@ class FullAggregation:
                     ORDER BY {mode} DESC
         """
 
-        if not t_size or t_size == 0: # player kill records
+        if not t_size or int(t_size) == 0: # player kill records
             deadliest = self.api.cur.execute(deadly_all).fetchall()
-        elif t_size == 1: # ffa kill records
+            print(deadliest)
+        elif int(t_size) == 1: # ffa kill records
             deadliest = self.api.cur.execute(deadly_ffa).fetchall()
+            print(deadliest)
         else: # team game combined kill records
             deadliest = self.api.cur.execute(deadly_teams, (t_size,)).fetchall()
 

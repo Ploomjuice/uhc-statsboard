@@ -564,7 +564,7 @@ class Dashboard(QMainWindow):
         view_label = QLabel("<h4>Order Deadliest Party By:")
         self.deadly_view = QComboBox()
         self.deadly_view.setFixedWidth(100)
-        self.deadly_view.addItems(["Kills", '%Roster'])
+        self.deadly_view.addItems(["kills", 'pct_killed'])
         self.deadly_view.setCurrentText('kills')
         self.deadly_view.currentTextChanged.connect(self._populate_deadliest)
         self.deadly_view.setStyleSheet(self.opaque)
@@ -2907,6 +2907,7 @@ class Dashboard(QMainWindow):
         self.unredact_label = QLabel()
         unredact_layout.addWidget(self.unredacted_username)
         unredact_layout.addWidget(self.unredact_button)
+        layout.addWidget(undo_redact_label)
         layout.addWidget(unredact)
         layout.addWidget(self.unredact_label)
 
