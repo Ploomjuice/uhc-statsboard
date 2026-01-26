@@ -2847,6 +2847,7 @@ class Dashboard(QMainWindow):
         layout.addWidget(self.update_button)
 
         self.update_status = QLabel()
+        self.update_status.setWordWrap(True)
         layout.addWidget(self.update_status)
 
         warning = QLabel("""
