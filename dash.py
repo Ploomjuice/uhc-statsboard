@@ -1,6 +1,5 @@
-import ast
-import sys
 
+import sys
 import plotly.express as px
 import math
 from db_ops import DBOPs
@@ -43,6 +42,7 @@ from scipy.stats import gaussian_kde
 import plotly.graph_objects as go
 from collections import defaultdict
 from workers import UpdateWorker, SimulatorWorker
+import os
 
 
 class Dashboard(QMainWindow):
