@@ -26,8 +26,7 @@ from PySide6.QtWidgets import (
     QScrollArea,
     QComboBox,
     QStyledItemDelegate,
-    QAbstractScrollArea,
-    QGraphicsOpacityEffect
+    QAbstractScrollArea
 )
 from PySide6.QtGui import QPixmap, QFont
 from PySide6.QtCore import QSize, Qt,  QPoint, QUrl, QThread
