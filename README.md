@@ -1,4 +1,4 @@
-<h2>r/ultrahardcore Statistics Dashboard</h2>
+<h1>r/ultrahardcore Statistics Dashboard</h1>
 
 (WIP)
 <p>
@@ -10,4 +10,13 @@
             @ripperstevem5's Global RR Stats Community Document</a></strong>, 
             with the main goals of convenience and scalability in mind.
             In addition to being a stat viewer, this dashboard also includes some experimental
-            potentially (hopefully) useful tools such as a player skill rating system, team builder, and UHC simulator.</p>
+            potentially useful tools such as a player skill rating system, team builder, and UHC simulator.</p>
+
+<h2>Feature Overview</h2>
+<ul>
+            <li>Leaderboard</li>
+            <li>Round Profile</li>
+            <li>Player Profile</li>
+            <li>Round Simulator</li>
+            <li>Settings and Update</li>
+</ul>
