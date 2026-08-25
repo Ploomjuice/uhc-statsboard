@@ -1,6 +1,6 @@
 <h1>r/ultrahardcore Statistics Dashboard</h1>
 
-(WIP)
+<h2>Introduction</h2>
 <p>
             This dashboard was developed by <strong><t style="color: #807fd1;"> plumjuice </t></strong>
             as an alternative visualization tool for various stats and other information
@@ -20,3 +20,9 @@
             <li>Round Simulator</li>
             <li>Settings and Update</li>
 </ul>
+
+<h2>Leaderboard</h2>
+The leaderboard section consists of three different sub-tabs: the main leaderboard, the special statistics leaderboard, and the scatter view, accessible through selecting an option from the drop-down menu at the top right.
+
+<h3>Main Leaderboard</h3>
+The main leaderboard displays all players that have played at least the threshold number (Round Minimum) of rounds, adjustable at the top of the page.  
