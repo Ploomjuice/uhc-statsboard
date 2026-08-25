@@ -25,4 +25,5 @@
 The leaderboard section consists of three different sub-tabs: the main leaderboard, the special statistics leaderboard, and the scatter view, accessible through selecting an option from the drop-down menu at the top right.
 
 <h3>Main Leaderboard</h3>
-The main leaderboard displays all players that have played at least the threshold number (Round Minimum) of rounds, adjustable at the top of the page.  
+The main leaderboard displays all players that have played at least the threshold number (Minimum Games Threshold) of rounds, adjustable at the top of the page.  Changing the settings at the top of the page (Sort By, Lifetime/Year Modes, Minimum Games Threshold) will automatically reupdate the leaderboard.
+
