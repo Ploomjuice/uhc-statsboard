@@ -47,6 +47,17 @@ The extra leaderboard displays metrics that could not be displayed within the ma
 The scatter view consists of two dropdowns for the X and Y axis variables and displays all metrics from players who meet the Minimum Games Threshold criterion.  Hovering over the scatter points will show the username, X value, and Y value of the referent player.
 
 <h2>Round Profiles</h2>
+
+<h3>Searching</h3>
+Round Profiles are separated into two sections: active and inactive rounds.  Typing into the search bar will filter the rounds by the input string.  Profile pages for each round can be accessed by clicking on the desired round name.
+
+<h3>Round Profile</h3>
+Round Profiles consist of various trivia and stats, visualizations for roster size and rating distribution (subject to change throughout the year), and links to individual season pages.
+
+<h3>Season Pages</h3>
+In each season page are information and killfeeds as found in the Community Stats Spreadsheet, with the addition of rankings of kill leaders by count and percentage of the roster size, as well as rankings of deadliest teams.
+
+
 <h2>Player Profiles</h2>
 <h2>Round Simulator</h2>
 <h2>Settings and Update</h2>
