@@ -12,6 +12,14 @@
             In addition to being a stat viewer, this dashboard also includes some experimental
             potentially useful tools such as a player skill rating system, team builder, and UHC simulator.</p>
 
+<h2>Release (date) Current Known Issues</h2>
+<ul>
+            <li><strong>Alternate Usernames Detection and therefore Updates are Broken:</strong> UPDATE AT YOUR OWN RISK!!! Updating results in split player statistics for each new username.  A fix is currently being worked on (highest priority).</li>
+            <li><strong>Yearly Statistics Leaderboard will not show:</strong> The database-to-display pipeline is currently being revamped.</li>
+            <li><strong>Updating Aggregate Statistics</strong> may result in some issues with players who have recently changed their usernames.</li>
+            
+</ul>
+
 <h2>Feature Overview</h2>
 <ul>
             <li>Leaderboard</li>
