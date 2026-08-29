@@ -49,7 +49,7 @@ The scatter view consists of two dropdowns for the X and Y axis variables and di
 <h2>Round Profiles</h2>
 
 <h3>Searching</h3>
-Round Profiles are separated into two sections: active and inactive rounds.  Typing into the search bar will filter the rounds by the input string.  Profile pages for each round can be accessed by clicking on the desired round name.
+Round Profiles are separated into two sections: active and inactive rounds.  Typing into the search bar will filter the rounds by the input string (case-insensitive).  Profile pages for each round can be accessed by clicking on the desired round name.
 
 <h3>Round Profile</h3>
 Round Profiles consist of various trivia and stats, visualizations for roster size and rating distribution (subject to change throughout the year), and links to individual season pages.
@@ -59,5 +59,9 @@ In each season page are information and killfeeds as found in the Community Stat
 
 
 <h2>Player Profiles</h2>
+
+<h3>Searching</h3>
+Similar to Round Profiles, Player Profiles will show filtered results based on the input string (case-insensitive).  Redacted players will still appear in the results list.  Player profiles can be accessed by clicking on a player's name.  To search for another user while on a profile, simply reuse the search bar to find another user.
+
 <h2>Round Simulator</h2>
 <h2>Settings and Update</h2>
