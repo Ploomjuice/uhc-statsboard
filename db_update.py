@@ -150,6 +150,7 @@ class Loader():
                 print('error:', repr(e))
 
 
+
             print("updating db")
             self.insert_player_stats()
         except Exception as e:
@@ -493,7 +494,7 @@ class Loader():
                 store[rr_name][season_no]['killers'] = [p.strip() for p in killers[:feed_end].replace(np.nan,'').to_list()]  # change to counter?
 
     def insert_player_stats(self):
-        agg = FullAggregation(interface=self.interface, update=True)
+        agg = FullAggregation(interface=self.interface, reinit=True)
 
         players_with_profiles = [i[0] for i in self.interface.cur.execute("SELECT player_id FROM player_stats").fetchall()]
 

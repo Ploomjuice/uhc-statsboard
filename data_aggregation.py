@@ -360,10 +360,10 @@ class FullAggregation:
             new_latest_rpq = self.get_stat_one_interval(interval_rounds_q, start, end)
             new_latest_pvepq = self.get_stat_one_interval(interval_pve_q, start, end)
 
-            self.kpq.iloc[idx_3m] = new_latest_kpq
-            self.dpq.iloc[idx_3m] = new_latest_dpq
-            self.rpq.iloc[idx_3m] = new_latest_rpq
-            self.pvepq.iloc[idx_3m] = new_latest_pvepq
+            self.kpq.loc[start] = new_latest_kpq
+            self.dpq.loc[start] = new_latest_dpq
+            self.rpq.loc[start] = new_latest_rpq
+            self.pvepq.loc[start] = new_latest_pvepq
             idx_3m += 1
 
         # halves
@@ -379,10 +379,10 @@ class FullAggregation:
 
             new_latest_pveph = self.get_stat_one_interval(interval_pve_q, start, end)
 
-            self.kph.iloc[idx_6m] = new_latest_kph
-            self.dph.iloc[idx_6m] = new_latest_dph
-            self.rph.iloc[idx_6m] = new_latest_rph
-            self.pveph.iloc[idx_6m] = new_latest_pveph
+            self.kph.loc[start] = new_latest_kph
+            self.dph.loc[start] = new_latest_dph
+            self.rph.loc[start] = new_latest_rph
+            self.pveph.loc[start] = new_latest_pveph
             idx_6m += 1
 
         # years
@@ -397,14 +397,14 @@ class FullAggregation:
             new_latest_rpy = self.get_stat_one_interval(interval_rounds_q, start, end)
             new_latest_pvepy = self.get_stat_one_interval(interval_pve_q, start, end)
 
-            self.kpy.iloc[idx_12m] = new_latest_kpy
-            self.dpy.iloc[idx_12m] = new_latest_dpy
-            self.rpy.iloc[idx_12m] = new_latest_rpy
-            self.pvepy.iloc[idx_12m] = new_latest_pvepy
+            self.kpy.loc[start] = new_latest_kpy
+            self.dpy.loc[start] = new_latest_dpy
+            self.rpy.loc[start] = new_latest_rpy
+            self.pvepy.loc[start] = new_latest_pvepy
 
-            new_latest_ratings = self.player_ratings_one_year(self.kprpy.iloc[idx_12m].to_dict(),
-                                                              self.wprpy.iloc[idx_12m].to_dict(),
-                                                              self.rpy.iloc[idx_12m].to_dict(), start, end)
+            new_latest_ratings = self.player_ratings_one_year(self.kprpy.loc[start].to_dict(),
+                                                              self.wprpy.loc[start].to_dict(),
+                                                              self.rpy.loc[start].to_dict(), start, end)
 
             for pid in self.player_map.values():
                 self.yearly_ratings[pid][str(start)[:4]] = new_latest_ratings[
@@ -1674,34 +1674,59 @@ class FullAggregation:
 
         igns_raw = self.api.cur.execute("SELECT player_id, current_ign FROM players").fetchall()
         igns = {n: p for n, p in igns_raw}
+        kills = {i:s for i, s in self.api.cur.execute("SELECT player_id, lifetime_kills FROM player_stats").fetchall()}
+        deaths = {i:s for i, s in self.api.cur.execute("SELECT player_id, lifetime_deaths FROM player_stats").fetchall()}
+        rounds = {i:s for i, s in self.api.cur.execute("SELECT player_id, lifetime_rounds FROM player_stats").fetchall()}
 
-        kills = {i:list(v.values())[0] for i, v in self.kill_counter.to_dict().items()}
-        kpy = self.kpy.astype(int)
-        deaths = {i:list(v.values())[0] for i, v in self.death_counter.to_dict().items()}
-        dpy = self.dpy.astype(int)
-        rounds = {i:list(v.values())[0] for i, v in self.round_counter.to_dict().items()}
-        rpy = self.rpy.astype(int)
-        wins = {i:list(v.values())[0] for i, v in self.win_counter.to_dict().items()}
-        wpy = self.wpy.astype(int)
-        alive_wins = {i:list(v.values())[0] for i, v in self.a_win_counter.to_dict().items()}
-        awpy = self.awpy.astype(int)
-        dead_wins = {i:list(v.values())[0] for i, v in self.d_win_counter.to_dict().items()}
-        dwpy = self.dwpy.astype(int)
-        tied_wins = {i:list(v.values())[0] for i, v in self.t_win_counter.to_dict().items()}
-        pve = {i:list(v.values())[0] for i, v in self.pve.to_dict().items()}
-        pvepy = self.pvepy.astype(int)
-        top_frags = self.top_frags
-        fdams = self.fdams
-        fdeaths = {i:list(v.values())[0] for i, v in self.first_deaths.to_dict().items()}
-        suicides = {i:list(v.values())[0] for i, v in self.suicides.to_dict().items()}
-        ironmans = self.ironmans
-        tks = {i:list(v.values())[0] for i, v in self.tks.to_dict().items()}
+        kpy = {i:ast.literal_eval(s)['12M'] for i, s in self.api.cur.execute("SELECT player_id, time_divided_kills FROM player_stats").fetchall()}
+        print("---------KPY---------", [i for i in kpy if len(kpy[i]) != 14])
+        dpy = {i:ast.literal_eval(s)['12M'] for i, s in self.api.cur.execute("SELECT player_id, time_divided_deaths FROM player_stats").fetchall()}
+        rpy = {i:ast.literal_eval(s)['12M'] for i, s in self.api.cur.execute("SELECT player_id, time_divided_rounds FROM player_stats").fetchall()}
 
-        kdr = {i: list(v.values())[0] for i, v in (self.kdr.round(2)).to_dict().items()}
+        wins = {i:s for i, s in self.api.cur.execute("SELECT player_id, lifetime_wins FROM player_stats").fetchall()}
+        wpy = {i:ast.literal_eval(s) for i, s in self.api.cur.execute("SELECT player_id, yearly_wins FROM player_stats").fetchall()}
+
+        alive_wins = {i:len(ast.literal_eval(s)) for i, s in self.api.cur.execute("SELECT player_id, alive_wins FROM player_stats").fetchall()}
+        dead_wins = {i: len(ast.literal_eval(s)) for i, s in self.api.cur.execute("SELECT player_id, dead_wins FROM player_stats").fetchall()}
+        tied_wins = {i:wins[i]-(alive_wins[i]+dead_wins[i]) for i in wins}
+
+        pve = {i: sum(ast.literal_eval(s)['12M']) for i, s in self.api.cur.execute("SELECT player_id, time_divided_pve FROM player_stats").fetchall()}
+        top_frags = {i:s for i, s in self.api.cur.execute("SELECT player_id, top_frags FROM player_stats").fetchall()}
+        fdams = {i:s for i, s in self.api.cur.execute("SELECT player_id, lifetime_first_dmg FROM player_stats").fetchall()}
+        fdeaths = {i:s for i, s in self.api.cur.execute("SELECT player_id, first_deaths FROM player_stats").fetchall()}
+        suicides = {i:s for i, s in self.api.cur.execute("SELECT player_id, suicides FROM player_stats").fetchall()}
+        ironmans = {i:s for i, s in self.api.cur.execute("SELECT player_id, lifetime_ironmans FROM player_stats").fetchall()}
+        tks = {i:s for i, s in self.api.cur.execute("SELECT player_id, team_kills FROM player_stats").fetchall()}
+        kdr = {i:round(float(s), 1) for i, s in self.api.cur.execute("SELECT player_id, lifetime_kdr FROM player_stats").fetchall()}
+        kpr = {i:round(float(s), 1)  for i, s in self.api.cur.execute("SELECT player_id, lifetime_kpr FROM player_stats").fetchall()}
+        wpr = {i:round(100*s, 1) for i, s in self.api.cur.execute("SELECT player_id, lifetime_wpr FROM player_stats").fetchall()}
+        # kills = {i:list(v.values())[0] for i, v in self.kill_counter.to_dict().items()}
+        # #kpy = self.kpy.astype(int)
+        # deaths = {i:list(v.values())[0] for i, v in self.death_counter.to_dict().items()}
+        # #dpy = self.dpy.astype(int)
+        # rounds = {i:list(v.values())[0] for i, v in self.round_counter.to_dict().items()}
+        # #rpy = self.rpy.astype(int)
+        # wins = {i:list(v.values())[0] for i, v in self.win_counter.to_dict().items()}
+        # #wpy = self.wpy.astype(int)
+        # alive_wins = {i:list(v.values())[0] for i, v in self.a_win_counter.to_dict().items()}
+        # awpy = self.awpy.astype(int)
+        # dead_wins = {i:list(v.values())[0] for i, v in self.d_win_counter.to_dict().items()}
+        # dwpy = self.dwpy.astype(int)
+        # tied_wins = {i:list(v.values())[0] for i, v in self.t_win_counter.to_dict().items()}
+        # pve = {i:list(v.values())[0] for i, v in self.pve.to_dict().items()}
+        # pvepy = self.pvepy.astype(int)
+        # top_frags = self.top_frags
+        # fdams = self.fdams
+        # fdeaths = {i:list(v.values())[0] for i, v in self.first_deaths.to_dict().items()}
+        # suicides = {i:list(v.values())[0] for i, v in self.suicides.to_dict().items()}
+        # ironmans = self.ironmans
+        # tks = {i:list(v.values())[0] for i, v in self.tks.to_dict().items()}
+
+        # kdr = {i: list(v.values())[0] for i, v in (self.kdr.round(2)).to_dict().items()}
         kdrpy = self.kdrpy.round(3)
-        kpr = {i: list(v.values())[0] for i, v in (self.kpr.round(2)).to_dict().items()}
+        # kpr = {i: list(v.values())[0] for i, v in (self.kpr.round(2)).to_dict().items()}
         kprpy = self.kprpy.round(3)
-        wpr = {i: round(list(v.values())[0], 1) for i, v in (100*self.wpr.round(3)).to_dict().items()}
+        # wpr = {i: round(list(v.values())[0], 1) for i, v in (100*self.wpr.round(3)).to_dict().items()}
         wprpy = self.wprpy.round(3)
 
 
@@ -1714,7 +1739,8 @@ class FullAggregation:
         alive_win_rate = {i:round(100*v/rounds[i], 1) if rounds[i] != 0 else 'N/A' for i, v in alive_wins.items()}
         dead_win_rate = {i:round(100*v/rounds[i], 1) if rounds[i] != 0 else 'N/A' for i, v, in dead_wins.items()}
         tied_win_rate = {i:round(100*v/rounds[i], 1) if rounds[i] != 0 else 'N/A' for i, v, in tied_wins.items()}
-        kr = self.krs
+
+        kr = {i: s for i, s in self.api.cur.execute("SELECT player_id, kill_record FROM player_stats").fetchall()}
 
 
         longest_ims_q = """
@@ -1780,22 +1806,22 @@ class FullAggregation:
             'Kill Record': kr,
 
 
-            'Yearly Kill Count': kpy.T.to_dict(),
-            'Yearly Death Count': dpy.T.to_dict(),
-            'Yearly Rounds Played': rpy.T.to_dict(),
-            'Yearly Win Count': wpy.T.to_dict(),
-            'Yearly Alive Win Count': awpy.T.to_dict(),
-            'Yearly Dead Win Count': dwpy.T.to_dict(),
-            'Yearly Tied Win Count': (wpy-awpy-dwpy).T.to_dict(),
-            'Yearly PvE Death Count': pvepy.T.to_dict(),
-            'Yearly PvE Death Rate': (100*(pvepy/dpy)).round(2).T.to_dict(),
-            'Yearly KDR': kdrpy.T.to_dict(),
-            'Yearly KPR': kprpy.T.to_dict(),
-            'Yearly Win Rate': (100*wprpy).round(2).T.to_dict(),
-            'Yearly Alive Win Rate': (100*(awpy / wpy)).round(2).T.to_dict(),
-            'Yearly Dead Win Rate': (100*(dwpy / wpy)).round(2).T.to_dict(),
-            'Yearly Tied Win Rate': (100*((wpy-awpy-dwpy)/wpy)).round(2).T.to_dict(),
-            'Yearly Ratings': self.yearly_ratings,
+            'Yearly Kill Count': kpy,
+            'Yearly Death Count': dpy,
+            'Yearly Rounds Played': rpy,
+            'Yearly Win Count': wpy,
+            # 'Yearly Alive Win Count': awpy.T.to_dict(),
+            # 'Yearly Dead Win Count': dwpy.T.to_dict(),
+            # 'Yearly Tied Win Count': (wpy-awpy-dwpy).T.to_dict(),
+            # 'Yearly PvE Death Count': pvepy.T.to_dict(),
+            # 'Yearly PvE Death Rate': (100*(pvepy/dpy)).round(2).T.to_dict(),
+            # 'Yearly KDR': kdrpy.T.to_dict(),
+            # 'Yearly KPR': kprpy.T.to_dict(),
+            # 'Yearly Win Rate': (100*wprpy).round(2).T.to_dict(),
+            # 'Yearly Alive Win Rate': (100*(awpy / wpy)).round(2).T.to_dict(),
+            # 'Yearly Dead Win Rate': (100*(dwpy / wpy)).round(2).T.to_dict(),
+            # 'Yearly Tied Win Rate': (100*((wpy-awpy-dwpy)/wpy)).round(2).T.to_dict(),
+            # 'Yearly Ratings': self.yearly_ratings,
             'Longest Ironman': longest_ims,
             'Latest First Damages': latest_fdams,
 

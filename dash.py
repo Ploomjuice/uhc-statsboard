@@ -769,6 +769,7 @@ class Dashboard(QMainWindow):
                     raw = {i: v for i, v in sort_by.items() if stat_dict['Rounds Played'][i] >= minimum}
                 else:
                     raw = {i: v for i, v in sort_by.items() if stat_dict['Rounds Played'][i] >= minimum and i not in stat_dict['redacted']}
+                print(raw)
                 sorted_data = dict(sorted(raw.items(), key=lambda item: item[1], reverse=True))
 
             except ValueError:
@@ -2974,6 +2975,7 @@ class Dashboard(QMainWindow):
             self.confirmation.setText(f"Please select a round from the dropdown above!")
             return
         gid = link.split('=')[-1]
+        # add check for invalid link
         print(round_name, gid)
         self.updater.add_round(round_name, gid)
         self.confirmation.setText(f"{round_name} Added!")

@@ -1,6 +1,7 @@
 """
 Contains a class of operations to use to interact with the database
 """
+import datetime
 import sqlite3
 
 class DBOPs:
@@ -475,4 +476,19 @@ class DBOPs:
                             VALUES (?,?,?,?,?,?, ?)
                             """
         self.cur.execute(season_killfeed_q, (season_id, dead_id, death_msg, killer_id, pve_id, ks, dupe_id))
+
+    def update_year(self):
+        get_yearly = """
+                    SELECT player_id,
+                    time_divided_rounds,
+                    time_divided_kills,
+                    time_divided_deaths,
+                    time_divided_kpr,
+                    time_divided_kdr,
+                    time_divided_dpr,
+                    time_divided_pve FROM player_stats
+                    """
+        all_time_div = self.cur.execute(get_yearly).fetchall()
+        ylength = datetime.datetime.today().year - 2012 - 1
+        hlength = ylength * 2
 
