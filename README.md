@@ -71,19 +71,21 @@ Each player has their own profile page that consist of the following:
             <li><strong>Debut RR</strong> - The earliest recorded round played </li>
             <li><strong>Most Recent RR</strong> - The most recently released round played</li>
             <li><strong>Rounds Played</strong> - Total number of rounds played </li>
-            <li><strong>Rating</strong> (experimental, WIP) - A metric calculated on a per-year basis to approximate a player's relative performance to other players, and is given by the following equation:</li><br>
+            <li><strong>Rating</strong> (experimental, WIP) - A graph shows the distribution of ratings for a given year (adjustable for relevant years using the dropdown), and a vertical line indicates the player's position within the distribution.  A dotted line (rather than a solid line), indicates that the player has played less than 5 rounds in the chosen year.  A metric calculated on a per-year basis to approximate a player's relative performance to other players, and is given by the following equation: (a "?" beside the rating and percentile indicates less than 5 rounds played that year)<br>
                         <ul>$$R_{t} = 100 \cdot (0.5 \cdot P_t + 0.25 \cdot KPR_t + 0.25 \cdot C_t)$$
             <br><br>
                         <li>$$R_t =\textbf{Performance rating for } t \textbf{ year}$$<br></li>
                         <li>$$P_t = \textbf{PageRank score for } t \textbf{ year}$$<br></li>
                         <li>$$KPR_t = \textbf{Average kills per round for } t \textbf{ year}$$<br></li>
                         <li>$$C_t = \textbf{Consistency score for } t \textbf{ year}$$</li>
-                                    <ul>$$C_t = \frac{\mu_t}{1 + \sigma_t}$$
+                                    <br>
+                                    <ul>$$C_t = \frac{\mu_t}{1 + \sigma_t}$$<br>
                                                 <li>$$\mu_t = \textbf{Average head to head record against all players for } t \textbf{ year}$$</li>
                                                 <li>$$\sigma_t = \textbf{Standard Deviation of head to head records against all players for } t \textbf{ year}$$</li>
                                     </ul>
-                                    </ul>
-            
+                                    </ul></li>
+</ul>
+<ul><h4>Kill Stats</h4>
 </ul>
 
 
