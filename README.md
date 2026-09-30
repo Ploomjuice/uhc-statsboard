@@ -63,5 +63,29 @@ In each season page are information and killfeeds as found in the Community Stat
 <h3>Searching</h3>
 Similar to Round Profiles, Player Profiles will show filtered results based on the input string (case-insensitive).  Redacted players will still appear in the results list.  Player profiles can be accessed by clicking on a player's name.  To search for another user while on a profile, simply reuse the search bar to find another user.
 
+<h3>Player Page</h3>
+Each player has their own profile page that consist of the following:
+<ul><h4>Left Column</h4>
+            <li><strong>IGN</strong> - As recorded in the Global RR Stats Community Document</li>
+            <li><strong>Current Skin</strong> - Fetched from Mineatar API with IGN (If the skin is not showing, Mojang API or Mineatar API may be down, or the player currently uses a different name than what is recorded in the document)</li><br>
+            <li><strong>Debut RR</strong> - The earliest recorded round played </li>
+            <li><strong>Most Recent RR</strong> - The most recently released round played</li>
+            <li><strong>Rounds Played</strong> - Total number of rounds played </li>
+            <li><strong>Rating</strong> (experimental, WIP) - A metric calculated on a per-year basis to approximate a player's relative performance to other players, and is given by the following equation:</li><br>
+                        <ul>$$R_{t} = 100 \cdot (0.5 \cdot P_t + 0.25 \cdot KPR_t + 0.25 \cdot C_t)$$
+            <br><br>
+                        <li>$$R_t =\textbf{Performance rating for } t \textbf{ year}$$<br></li>
+                        <li>$$P_t = \textbf{PageRank score for } t \textbf{ year}$$<br></li>
+                        <li>$$KPR_t = \textbf{Average kills per round for } t \textbf{ year}$$<br></li>
+                        <li>$$C_t = \textbf{Consistency score for } t \textbf{ year}$$</li>
+                                    <ul>$$C_t = \frac{\mu_t}{1 + \sigma_t}$$
+                                                <li>$$\mu_t = \textbf{Average head to head record against all players for } t \textbf{ year}$$</li>
+                                                <li>$$\sigma_t = \textbf{Standard Deviation of head to head records against all players for } t \textbf{ year}$$</li>
+                                    </ul>
+                                    </ul>
+            
+</ul>
+
+
 <h2>Round Simulator</h2>
 <h2>Settings and Update</h2>
