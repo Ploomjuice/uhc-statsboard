@@ -86,6 +86,15 @@ Each player has their own profile page that consist of the following:
                                     </ul></li>
 </ul>
 <ul><h4>Kill Stats</h4>
+            <li><strong>Lifetime Kills</strong>: Total kills up to the latest update</li>
+            <li><strong>Q(1-4) | H(1-2) | (Year) Kills</strong>: Current Quarterly, Semiannual, Yearly Kill Counts</li>
+            <li><strong>Lifetime KDR</strong>: Aggregate Kill to Death Ratio</li>
+            <li><strong>Q(1-4) | H(1-2) | (Year) KDR</strong>: Aggregate Kill to Death Ratio by Quarter, Half, Year</li>
+            <li><strong>Lifetime KPR</strong>: Aggregate Kill to Rounds Played Ratio</li>
+            <li><strong>Q(1-4) | H(1-2) | (Year) KPR</strong>: Aggregate Kill to Rounds Played Ratio by Quarter, Half, Year</li>
+            <li><strong>First Bloods</strong>: Number of rounds in which this player eliminated another player first (% of rounds played)</li>
+            <li><strong>Top Frags</strong>: Number of rounds in which this player eliminated the most other players (% of rounds played)</li>
+            <li><strong>Killl Record</strong>: The most eliminations a player has achieved in a single round.</li>
 </ul>
 
 
