@@ -65,7 +65,7 @@ Similar to Round Profiles, Player Profiles will show filtered results based on t
 
 <h3>Player Page</h3>
 Each player has their own profile page that consist of the following:
-<ul><h4>Left Column</h4>
+<ul><h3>Left Column</h3>
             <li><strong>IGN</strong> - As recorded in the Global RR Stats Community Document</li>
             <li><strong>Current Skin</strong> - Fetched from Mineatar API with IGN (If the skin is not showing, Mojang API or Mineatar API may be down, or the player currently uses a different name than what is recorded in the document)</li><br>
             <li><strong>Debut RR</strong> - The earliest recorded round played </li>
@@ -85,7 +85,7 @@ Each player has their own profile page that consist of the following:
                                     </ul>
                                     </ul></li>
 </ul>
-<ul><h4>Kill Stats</h4>
+<ul><h3>Kill Stats</h3>
             <li><strong>Lifetime Kills</strong>: Total kills up to the latest update</li>
             <li><strong>Q(1-4) | H(1-2) | (Year) Kills</strong>: Current Quarterly, Semiannual, Yearly Kill Counts</li>
             <li><strong>Lifetime KDR</strong>: Aggregate Kill to Death Ratio</li>
