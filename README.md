@@ -67,7 +67,7 @@ Similar to Round Profiles, Player Profiles will show filtered results based on t
 Each player has their own profile page that consist of the following:
 <ul><h3>Left Column</h3>
             <li><strong>IGN</strong> - As recorded in the Global RR Stats Community Document</li>
-            <li><strong>Current Skin</strong> - Fetched from Mineatar API with IGN (If the skin is not showing, Mojang API or Mineatar API may be down, or the player currently uses a different name than what is recorded in the document)</li><br>
+            <li><strong>Current Skin</strong> - Fetched from Mineatar API with IGN (If the skin is not showing, Mojang API or Mineatar API may be down, or the player currently uses a different name than what is recorded in the document)</li>
             <li><strong>Debut RR</strong> - The earliest recorded round played </li>
             <li><strong>Most Recent RR</strong> - The most recently released round played</li>
             <li><strong>Rounds Played</strong> - Total number of rounds played </li>
@@ -96,7 +96,9 @@ Each player has their own profile page that consist of the following:
             <li><strong>Top Frags</strong>: Number of rounds in which this player eliminated the most other players (% of rounds played)</li>
             <li><strong>Killl Record</strong>: The most eliminations a player has achieved in a single round.</li>
 </ul>
-
+<ul><h3>Death Stats</h3>
+            <li>
+</ul>
 
 <h2>Round Simulator</h2>
 <h2>Settings and Update</h2>
